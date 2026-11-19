@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#150a2b">
+<title>Request Lagu</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  body { display: flex; flex-direction: column; height: 100dvh; max-width: 560px; margin: 0 auto; }
+  header { padding: 14px 16px 10px; }
+  header .brand b { font-size: 22px; }
+  .np { margin-top: 10px; padding: 12px 14px; }
+  .np .t { font-weight: 800; font-size: 16px; margin-top: 3px; }
+  main { flex: 1; overflow-y: auto; padding: 4px 16px 16px; }
+  section { display: none; } section.on { display: block; }
+  h4 { margin: 18px 0 10px; } h4.lbl { font-size: 12px; }
+  nav.bot { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--bar); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  nav.bot button { background: none; padding: 9px 0 8px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+  nav.bot button.on { color: #fff; box-shadow: inset 0 3px 0 var(--pink); }
+  nav.bot svg { width: 22px; height: 22px; }
+  .badge { position: absolute; top: 4px; left: 55%; background: var(--pink); color: #fff; border-radius: 99px; font-size: 10px; padding: 1px 6px; }
+  .song-row { padding: 9px; }
+  .song-row .btns { display: flex; flex-direction: column; gap: 5px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .big { padding: 18px 8px !important; font-size: 15px !important; border-radius: 14px !important; }
+  .emo { font-size: 26px; padding: 12px 0 !important; }
+  .mine { display: flex; justify-content: space-between; gap: 8px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: #ffffff06; margin-bottom: 6px; }
+  .mine span { color: var(--pink); font-size: 13px; white-space: nowrap; }
+  .gate { text-align: center; padding: 50px 20px; }
+  .yt-th { width: 96px; }
+  .stick { position: sticky; top: 0; padding: 6px 0 10px; background: linear-gradient(var(--bg1) 70%, transparent); z-index: 2; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<header>
+  <div class="row"><div class="brand grow"><b id="venue">Karaoke-PC-F</b><small id="roomLbl">KARAOKE</small></div><button class="btn sm" id="whoBtn">👤 <span id="who"></span></button></div>
+  <div class="card np" id="npCard"><span class="lbl">Sedang diputar</span><div class="t ell" id="npT">—</div><div class="muted ell" style="font-size:12px" id="npA"></div></div>
+</header>
+<main id="main">
+  <div class="gate" id="gate" style="display:none"><div style="font-size:50px">🎤</div><h2>Room belum dibuka</h2><p class="muted" id="gateMsg">Minta kasir membuka room, lalu scan ulang QR di layar TV.</p><button class="btn pri" onclick="location.reload()">Coba lagi</button></div>
+
+  <section id="s-search" class="on">
+    <div class="stick"><input id="q" placeholder="Cari judul / artis / nomor lagu…" autocomplete="off" type="search"></div>
+    <div id="qJobs"></div>
+    <div class="sec-h" style="margin-top:4px">💽 Di penyimpanan <span class="muted" id="qInfo"></span></div>
+    <div id="qRes" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="ytSec" style="display:none"><div class="sec-h">▶️ Dari YouTube <span class="muted" id="ytState"></span></div>
+    <div id="qYt" style="display:flex;flex-direction:column;gap:8px"></div></div>
+  </section>
+
+  <section id="s-queue">
+    <h4 class="lbl">Lagu kamu</h4><div id="mine"></div>
+    <h4 class="lbl">Antrian</h4><div id="queue" style="display:flex;flex-direction:column;gap:8px"></div>
+    <h4 class="lbl">Sudah dinyanyikan</h4><div id="sung" style="display:flex;flex-direction:column;gap:6px"></div>
+  </section>
+
+  <section id="s-hits">
+    <h4 class="lbl">Lagu paling sering dinyanyikan</h4>
+    <div id="hits" style="display:flex;flex-direction:column;gap:8px"></div>
+  </section>
+
+  <section id="s-remote">
+    <h4 class="lbl">Playback</h4>
+    <div class="grid3"><button class="btn red big" data-c="toggle">⏯ Pause</button><button class="btn vio big" data-c="replay">⟲ Ulang</button><button class="btn grn big" id="skip">⏭ Skip</button></div>
+    <h4 class="lbl">Vokal</h4>
+    <div class="grid4"><button class="btn" data-c="vocal:orig">Original</button><button class="btn pri" data-c="vocal:cut">Vocal Cut</button><button class="btn" data-c="vocal:left">Ch Kiri</button><button class="btn" data-c="vocal:right">Ch Kanan</button></div>
+    <h4 class="lbl">Lirik · Tempo · Volume</h4>
+    <div class="grid3"><button class="btn" data-c="lyrics:later">Lirik −</button><button class="btn on" data-c="lyrics:toggle">Lirik On/Off</button><button class="btn" data-c="lyrics:earlier">Lirik +</button>
+      <button class="btn" data-c="tempo:down">Tempo −</button><button class="btn" data-c="tempo:reset">Tempo 100%</button><button class="btn" data-c="tempo:up">Tempo +</button>
+      <button class="btn" data-c="vol:down">🔉 Vol −</button><button class="btn" data-c="fullscreen">⛶ Layar</button><button class="btn" data-c="vol:up">🔊 Vol +</button></div>
+    <h4 class="lbl">Semangati penyanyi</h4>
+    <div class="grid4" id="cheers"></div>
+    <h4 class="lbl">Suara penonton</h4>
+    <div class="grid4"><button class="btn yel" data-c="sound:applause">👏 Tepuk</button><button class="btn yel" data-c="sound:cheer">🙌 Sorak</button><button class="btn" data-c="sound:horn">📯 Terompet</button><button class="btn" data-c="sound:drum">🥁 Drum</button></div>
+    <h4 class="lbl">Pesan ke layar TV</h4>
+    <div class="row"><input id="msg" maxlength="80" placeholder="Tulis ucapan…"><button class="btn pri" id="msgSend">Kirim</button></div>
+    <h4 class="lbl">Lampu layar</h4>
+    <div class="grid3"><button class="btn" data-c="lights:usual">✨ Normal</button><button class="btn" data-c="lights:birthday">🎂 Ultah</button><button class="btn" data-c="lights:romantic">🌹 Romantis</button><button class="btn" data-c="lights:party">🪩 Party</button><button class="btn" data-c="lights:chill">🌙 Santai</button></div>
+  </section>
+
+  <section id="s-order">
+    <button class="btn red big" id="call" style="width:100%;margin-top:6px">🔔 Panggil Staf</button>
+    <h4 class="lbl">Menu</h4><div id="menu" style="display:flex;flex-direction:column;gap:8px"></div>
+    <h4 class="lbl">Pesanan room ini</h4><div id="orders" style="display:flex;flex-direction:column;gap:6px"></div>
+  </section>
+</main>
+<nav class="bot" id="nav">
+  <button data-s="search" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>CARI</button>
+  <button data-s="queue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>ANTRIAN<span class="badge" id="qBadge" style="display:none"></span></button>
+  <button data-s="hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-4 5-4 7-1-1-2-2-2-4-2 2-3 5-3 9 0 4 3 7 7 7z"/></svg>HITS</button>
+  <button data-s="remote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>REMOTE</button>
+  <button data-s="order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v7a3 3 0 0 0 6 0V2M9 2v20M18 2c-2 0-3 2-3 5v5h3v10"/></svg>PESAN</button>
+</nav>
+
+<script src="/static/common.js"></script>
+<script>
+const roomId = location.pathname.split('/')[2];
+const k = new URLSearchParams(location.search).get('k') || '';
+const G = (sub = '') => `/api/guest/${encodeURIComponent(roomId)}${sub ? '/' + sub : ''}?k=${encodeURIComponent(k)}`;
+const gapi = (sub, body) => api(G(sub), body);
+const CHEERS = ['❤️', '🔥', '👏', '🎉', '🌹', '😍', '💯', '🎤'];
+let me = store.get('guestName', '');
+let state = null;
+
+function askName(force) {
+  if (me && !force) return;
+  const n = prompt('Nama kamu (muncul di antrian & layar):', me || '');
+  if (n !== null) { me = n.trim().slice(0, 20) || 'Tamu'; store.set('guestName', me); }
+  if (!me) me = 'Tamu';
+  $('#who').textContent = me;
+}
+$('#who').textContent = me || 'Nama';
+$('#whoBtn').onclick = () => askName(true);
+
+function row(s, extra) {
+  return `<div class="song-row">${coverHTML(s, 48)}<div class="grow"><div class="t ell">${esc(s.title)}</div><div class="a ell">${esc(s.artist || s.folder || '')}${s.by ? ` <span class="tag pink">${esc(s.by)}</span>` : ''}</div></div>${extra || ''}</div>`;
+}
+const addBtns = (s) => `<div class="btns"><button class="btn sm pri" data-add="${s.id}">+ Tambah</button><button class="btn sm vio" data-add="${s.id}" data-top="1">Berikutnya</button></div>`;
+
+function render() {
+  $('#venue').textContent = state.venue;
+  $('#roomLbl').textContent = 'ROOM ' + state.room.name;
+  document.title = 'Request — Room ' + state.room.name;
+  if (!state.active) {
+    $('#gate').style.display = ''; $$('section').forEach((s) => s.style.display = 'none'); $('#nav').style.display = 'none'; $('#npCard').style.display = 'none';
+    return;
+  }
+  $('#gate').style.display = 'none'; $$('section').forEach((s) => s.style.display = ''); $('#nav').style.display = ''; $('#npCard').style.display = '';
+  const s = state.room.session;
+  $('#npT').textContent = s.now ? s.now.title : 'Belum ada lagu';
+  $('#npA').textContent = s.now ? [s.now.artist, s.now.by && 'oleh ' + s.now.by].filter(Boolean).join(' · ') : 'Pilih lagu di tab Cari';
+  $('#qBadge').style.display = s.queue.length ? '' : 'none'; $('#qBadge').textContent = s.queue.length;
+  const mine = s.queue.map((q, i) => ({ q, i })).filter((x) => x.q.by && x.q.by === me);
+  $('#mine').innerHTML = mine.map(({ q, i }) => `<div class="mine"><b class="ell">${esc(q.title)}</b><span>${i === 0 ? 'berikutnya' : i + ' lagu lagi · ±' + (i * 4) + ' mnt'}</span></div>`).join('') || '<div class="muted" style="font-size:13px">Kamu belum memilih lagu.</div>';
+  $('#queue').innerHTML = s.queue.map((q, i) => row(q, `<div class="btns"><button class="btn sm vio" data-qtop="${q.qid}" ${i === 0 ? 'disabled' : ''}>Naik</button><button class="btn sm red" data-rm="${q.qid}">Hapus</button></div>`)).join('') || '<div class="empty">Antrian kosong</div>';
+  $('#sung').innerHTML = s.played.slice(0, 30).map((q) => row(q, `<button class="btn sm" data-add="${q.id}">Lagi</button>`)).join('') || '<div class="muted" style="font-size:13px">Belum ada.</div>';
+  $('#menu').innerHTML = (state.menu || []).map((m) => `<div class="song-row"><div class="grow"><div class="t">${esc(m.name)}</div><div class="a">${esc(m.cat)} · ${rupiah(m.price, state.currency)}</div></div><button class="btn sm pri" data-order="${m.id}">+ Pesan</button></div>`).join('');
+  $('#orders').innerHTML = s.orders.filter((o) => o.status !== 'batal').map((o) => `<div class="song-row"><div class="grow">${o.qty}× ${esc(o.name)}</div><span class="tag ${o.status === 'baru' ? 'pink' : ''}">${o.status === 'baru' ? 'Diproses' : 'Diantar'}</span></div>`).join('') || '<div class="muted" style="font-size:13px">Belum ada pesanan.</div>';
+}
+
+const refresh = debounce(async () => {
+  try { const first = !state; state = await api(G()); render(); if (first) loadJobs(); } catch (e) { toast(e.message); }
+}, 150);
+let lastV = -1;
+const loadTheme = () => api('/api/display').then((d) => applyTheme(d.theme)).catch(() => {});
+loadTheme();
+listen((m) => { if (m.v !== lastV) { lastV = m.v; refresh(); } if (m.display) loadTheme(); if (m.yt) loadJobs(); });
+
+$('#nav').onclick = (e) => {
+  const b = e.target.closest('[data-s]'); if (!b) return;
+  $$('#nav button').forEach((x) => x.classList.toggle('on', x === b));
+  $$('section').forEach((s) => s.classList.toggle('on', s.id === 's-' + b.dataset.s));
+  $('#main').scrollTop = 0;
+  if (b.dataset.s === 'hits') loadHits();
+};
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button'); if (!t) return;
+  try {
+    if (t.dataset.add) { askName(); await gapi('queue', { songId: t.dataset.add, by: me, top: !!t.dataset.top }); toast('Masuk antrian ✔', 1500); }
+    else if (t.dataset.ytd) {
+      askName(); t.disabled = true;
+      const r = await gapi('yt/add', { url: t.dataset.ytd, title: t.dataset.title, by: me });
+      if (r.queued) toast('Lagu sudah tersimpan — masuk antrian ✔'); else { toast('Download dimulai ⬇ Otomatis masuk antrian setelah selesai'); t.textContent = '⏳ Sedang didownload'; }
+      loadJobs();
+    }
+    else if (t.dataset.qtop) await gapi('queue-top', { qid: t.dataset.qtop });
+    else if (t.dataset.rm) { if (confirm('Hapus lagu ini dari antrian?')) await gapi('queue-remove', { qid: t.dataset.rm }); }
+    else if (t.dataset.c) { await gapi('control', { action: t.dataset.c, by: me }); if (navigator.vibrate) navigator.vibrate(15); }
+    else if (t.dataset.order) { const q = prompt('Jumlah?', '1'); if (q) { await gapi('order', { itemId: t.dataset.order, qty: q }); toast('Pesanan dikirim ✔'); } }
+  } catch (err) { toast(err.message); }
+});
+$('#cheers').innerHTML = CHEERS.map((c, i) => `<button class="btn emo" data-c="cheer:${i}">${c}</button>`).join('');
+$('#skip').onclick = () => gapi('skip').catch((e) => toast(e.message));
+$('#call').onclick = () => gapi('call').then(() => toast('Staf sudah dipanggil 🔔')).catch((e) => toast(e.message));
+$('#msgSend').onclick = () => { askName(); const t = $('#msg').value.trim(); if (t) gapi('message', { text: t, by: me }).then(() => { $('#msg').value = ''; toast('Terkirim ke layar ✔', 1200); }); };
+
+const doSearch = debounce(async () => {
+  const q = $('#q').value.trim();
+  const r = await api('/api/songs?limit=80&q=' + encodeURIComponent(q));
+  $('#qInfo').textContent = q ? `${r.total} ditemukan` : `${r.total} lagu`;
+  $('#qRes').innerHTML = r.items.map((s) => row(s, addBtns(s))).join('') || `<div class="muted" style="font-size:13px;padding:8px 0">Tidak ada di penyimpanan${state && state.youtube ? ' — lihat hasil YouTube di bawah.' : '.'}</div>`;
+}, 250);
+let ytSeq = 0;
+const doYt = debounce(async () => {
+  const q = $('#q').value.trim(), my = ++ytSeq;
+  const on = !!(state && state.active && state.youtube);
+  $('#ytSec').style.display = on && q.length >= 3 ? '' : 'none';
+  if (!on || q.length < 3 || /^\d+$/.test(q)) return;
+  $('#ytState').innerHTML = '<span class="spin"></span> mencari…';
+  try {
+    const r = await gapi('yt/search', { q });
+    if (my !== ytSeq) return;
+    $('#ytState').textContent = r.items.length + ' hasil';
+    $('#qYt').innerHTML = r.items.map(ytCardHTML).join('') || '<div class="muted">Tidak ada hasil</div>';
+  } catch (e) { if (my === ytSeq) { $('#ytState').textContent = ''; $('#qYt').innerHTML = `<div class="muted" style="font-size:13px">${esc(e.message)}</div>`; } }
+}, 900);
+$('#q').oninput = () => { doSearch(); doYt(); }; doSearch();
+const loadJobs = () => gapi('yt/status').then((st) => { $('#qJobs').innerHTML = jobsHTML(st.jobs || []); }).catch(() => {});
+async function loadHits() {
+  const r = await api('/api/songs?sort=popular&limit=50');
+  $('#hits').innerHTML = r.items.map((s, i) => row({ ...s, title: (i + 1) + '. ' + s.title }, addBtns(s))).join('');
+}
+</script>
+</body>
+</html>

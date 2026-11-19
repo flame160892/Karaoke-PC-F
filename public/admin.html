@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karaoke-PC-F — Desk</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  body { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+  header { display: flex; align-items: center; gap: 18px; padding: 12px 20px; background: var(--bar); border-bottom: 1px solid var(--line); }
+  header .st { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  header .st i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .kpi { text-align: right; } .kpi b { font-size: 20px; display: block; } .kpi span { font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+  .wrap { display: grid; grid-template-columns: 210px 1fr 330px; min-height: 0; }
+  .wrap.noside { grid-template-columns: 210px 1fr; }
+  aside.nav { border-right: 1px solid var(--line); padding: 14px 10px; overflow-y: auto; background: var(--bar); }
+  aside.nav .lbl { color: var(--dim); margin: 14px 8px 6px; display: block; font-size: 9px; }
+  aside.nav button { display: flex; width: 100%; align-items: center; gap: 9px; background: none; padding: 8px 10px; border-radius: 8px; font-size: 13px; text-align: left; color: var(--text); }
+  aside.nav button:hover { background: #ffffff0d; }
+  aside.nav button.on { background: color-mix(in srgb, var(--violet) 22%, transparent); box-shadow: inset 3px 0 0 var(--pink); }
+  aside.nav button:disabled { opacity: .3; }
+  .view { overflow-y: auto; padding: 18px; display: none; } .view.on { display: block; }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .rc { border-radius: 14px; padding: 14px 16px; min-height: 150px; text-align: left; display: flex; flex-direction: column; gap: 3px; font-size: 13px; box-shadow: inset 0 1px 0 #fff2, 0 8px 24px #0004; border: 2px solid transparent; position: relative; }
+  .rc.sel { border-color: var(--cyan); box-shadow: 0 0 0 3px #38d6f533; }
+  .rc .nm { font-size: 18px; font-weight: 900; } .rc .ty { font-weight: 650; opacity: .85; }
+  .rc .stt { margin-top: 8px; font-weight: 800; } .rc .tm { font-variant-numeric: tabular-nums; }
+  .rc .ic { position: absolute; top: 12px; right: 14px; font-size: 20px; }
+  .rc.calling { animation: blink 1s infinite; }
+  @keyframes blink { 50% { filter: brightness(1.5); } }
+  aside.side { border-left: 1px solid var(--line); padding: 16px; overflow-y: auto; background: var(--bar); display: flex; flex-direction: column; gap: 12px; }
+  .side h2 { margin: 0; font-size: 26px; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 13px; } .kv span { color: var(--muted); }
+  .mini { font-size: 12px; } .mini .song-row { padding: 6px 8px; gap: 8px; }
+  footer { display: flex; gap: 14px; align-items: center; padding: 8px 18px; background: var(--bar); border-top: 1px solid var(--line); font-size: 12px; }
+  footer .calls { display: flex; gap: 8px; flex: 1; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 650; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  td.r, th.r { text-align: right; }
+  .panel { padding: 18px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 12px; }
+  .dirrow { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: #ffffff08; margin-bottom: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .yt-item { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 12px; background: #ffffff08; }
+  .yt-item img { width: 120px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: #000; }
+  .prog { height: 6px; background: #ffffff1a; border-radius: 6px; overflow: hidden; margin-top: 6px; } .prog i { display: block; height: 100%; background: var(--flame); }
+  .tk-prev { overflow: hidden; white-space: nowrap; background: linear-gradient(90deg, var(--pink), var(--violet)); font-weight: 800; padding: 8px 0; border-radius: 8px; }
+  .tk-prev span { display: inline-block; padding-left: 100%; animation: tick 18s linear infinite; }
+  @keyframes tick { to { transform: translateX(-100%); } }
+  .logo-prev { width: 220px; height: 120px; border-radius: 12px; background: #000 center/contain no-repeat; border: 1px dashed var(--line); display: grid; place-items: center; color: var(--dim); }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; } .seg .btn.on { outline: 2px solid var(--pink); }
+  .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .th { border-radius: 14px; padding: 0; overflow: hidden; border: 2px solid var(--line); text-align: left; background: none; }
+  .th.on { border-color: var(--pink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink) 30%, transparent); }
+  .th .pv { height: 90px; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
+  .th .pv b { font-size: 20px; font-weight: 900; letter-spacing: 1px; -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .th .sw { display: flex; gap: 5px; } .th .sw i { width: 22px; height: 8px; border-radius: 4px; }
+  .th .nm { padding: 9px 12px; font-weight: 700; font-size: 13px; background: #0006; }
+  #pinGate { position: fixed; inset: 0; z-index: 1000; display: none; place-items: center; background: var(--bg0); }
+  #pinGate.on { display: grid; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<header>
+  <div class="brand"><b id="venue">Karaoke-PC-F</b><small>KARAOKE SYSTEM · STAFF DESK</small></div>
+  <div class="st grow" id="counts"></div>
+  <div class="kpi"><b class="money" id="kpiToday">Rp 0</b><span>HARI INI</span></div>
+  <div class="kpi"><b id="clock">--:--</b><span>&nbsp;</span></div>
+</header>
+
+<div class="wrap" id="wrap">
+  <aside class="nav" id="nav">
+    <span class="lbl">Tampilan</span>
+    <button data-view="rooms" class="on">🏠 Room</button>
+    <button data-view="trx">📊 Transaksi</button>
+    <button data-view="songs">💽 Lagu &amp; Hardisk</button>
+    <button data-view="yt">▶️ YouTube</button>
+    <button data-view="menu">🍽️ Menu F&amp;B</button>
+    <button data-view="display">🎨 Tema, Logo &amp; Teks</button>
+    <button data-view="settings">⚙️ Pengaturan</button>
+    <span class="lbl">Room terpilih</span>
+    <button data-act="open">🔑 Buka Room</button>
+    <button data-act="extend">⏱️ Tambah Waktu</button>
+    <button data-act="move">🔁 Pindah Room</button>
+    <button data-act="order">🛒 Tambah Pesanan</button>
+    <button data-act="checkout">💳 Checkout</button>
+    <button data-act="cleaned">🧹 Selesai Dibersihkan</button>
+    <button data-act="maint">🔧 Maintenance</button>
+    <button data-act="player">📺 Buka Layar Room</button>
+    <button data-act="editroom">✏️ Edit Room</button>
+    <span class="lbl">Staf</span>
+    <button data-act="broadcast">📢 Broadcast</button>
+    <button data-act="addroom">➕ Tambah Room</button>
+    <button data-act="shift">🧾 Laporan Shift</button>
+  </aside>
+
+  <div class="view on" id="v-rooms"><div class="rooms" id="rooms"></div></div>
+
+  <div class="view" id="v-trx">
+    <div class="row" style="margin-bottom:14px"><h2 class="grow" style="margin:0">Transaksi</h2>
+      <input type="date" id="trxDate" style="width:auto"><button class="btn" id="trxCsv">⬇ Export CSV</button></div>
+    <div class="card panel"><div class="row"><div class="grow"><span class="lbl">Total</span><div style="font-size:28px;font-weight:900" class="money" id="trxTotal"></div></div><div class="muted" id="trxCount"></div></div></div>
+    <div class="card" style="padding:6px 8px"><table><thead><tr><th>No.</th><th>Room</th><th>Tamu</th><th>Jam</th><th class="r">Durasi</th><th class="r">Room</th><th class="r">F&amp;B</th><th class="r">Total</th><th>Bayar</th><th></th></tr></thead><tbody id="trxBody"></tbody></table></div>
+  </div>
+
+  <div class="view" id="v-songs">
+    <h2 style="margin-top:0">Lagu &amp; Hardisk</h2>
+    <div class="card panel">
+      <h3>Folder lagu</h3>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Tambahkan folder dari hardisk internal atau <b>hardisk eksternal</b> (mis. <code>E:\KARAOKE</code>). Semua room mengambil lagu dari hardisk server ini lewat jaringan. Format: MP4, MKV, WEBM, MP3, M4A (+ file lirik .lrc dengan nama yang sama).</div>
+      <div id="dirs"></div>
+      <div class="row" style="margin-top:10px"><input id="newDir" placeholder="Contoh: E:\KARAOKE atau D:\Lagu"><button class="btn" id="pickDir">📁 Pilih…</button><button class="btn pri" id="addDir">Tambah</button></div>
+      <div class="row" style="margin-top:14px"><button class="btn vio" id="rescan">🔄 Pindai ulang lagu</button><span class="muted" id="scanInfo"></span></div>
+    </div>
+    <div class="card panel">
+      <h3>Cari &amp; antrikan ke room</h3>
+      <div class="row" style="margin-bottom:10px"><input id="sq" placeholder="Cari lagu…"><select id="sqRoom" style="width:200px"></select></div>
+      <div id="sres" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-yt">
+    <h2 style="margin-top:0">Download dari YouTube</h2>
+    <div class="card panel" id="ytSetup"></div>
+    <div class="card panel">
+      <div class="row" style="margin-bottom:10px"><input id="ytq" placeholder="Judul lagu atau tempel link YouTube…"><label class="row" style="width:auto;white-space:nowrap;font-size:13px"><input type="checkbox" id="ytKara" checked style="width:auto"> + "karaoke"</label><button class="btn pri" id="ytGo">Cari</button></div>
+      <div class="row" style="margin-bottom:12px"><span class="muted" style="font-size:13px">Setelah selesai, antrikan ke:</span><select id="ytRoom" style="width:220px"></select></div>
+      <div id="ytRes" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div class="card panel"><div class="row" style="margin-bottom:10px"><h3 class="grow" style="margin:0">Proses download</h3><button class="btn sm" id="ytClear">Bersihkan yang selesai</button></div><div id="ytJobs" style="display:flex;flex-direction:column;gap:8px"></div></div>
+  </div>
+
+  <div class="view" id="v-menu">
+    <div class="row" style="margin-bottom:14px"><h2 class="grow" style="margin:0">Menu Makanan &amp; Minuman</h2><button class="btn pri" id="addMenu">+ Tambah Menu</button></div>
+    <div class="card" style="padding:6px 8px"><table><thead><tr><th>Nama</th><th>Kategori</th><th class="r">Harga</th><th></th></tr></thead><tbody id="menuBody"></tbody></table></div>
+  </div>
+
+  <div class="view" id="v-display">
+    <h2 style="margin-top:0">Tema, Logo &amp; Running Text</h2>
+    <div class="card panel">
+      <h3>Tema warna</h3>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Berlaku langsung untuk Desk, semua layar room, dan HP tamu.</div>
+      <div class="themes" id="themes"></div>
+    </div>
+    <div class="card panel">
+      <h3>Logo tempat usaha</h3>
+      <div class="row" style="align-items:flex-start;gap:18px">
+        <div class="logo-prev" id="logoPrev">Belum ada logo</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" style="display:none">
+          <button class="btn pri" id="logoUp">⬆ Upload logo</button>
+          <button class="btn red" id="logoDel">Hapus logo</button>
+          <div class="field"><label>Posisi logo saat video layar penuh</label>
+            <select id="logoPos"><option value="top-right">Kanan atas</option><option value="top-left">Kiri atas</option><option value="bottom-right">Kanan bawah</option><option value="bottom-left">Kiri bawah</option></select></div>
+          <div class="muted" style="font-size:12px">PNG transparan paling bagus. Logo tampil di atas layar room, di pojok video, dan di layar saat room tutup.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card panel">
+      <h3>Running text (tulisan berjalan)</h3>
+      <label class="row" style="margin-bottom:10px"><input type="checkbox" id="tkOn" style="width:auto"> Tampilkan tulisan berjalan</label>
+      <div class="field"><label>Isi pesan — satu baris = satu info (dipisah tanda ★)</label><textarea id="tkText" rows="5"></textarea></div>
+      <div class="field" style="margin-top:10px"><label>Kecepatan: <b id="tkSpdV"></b></label><input type="range" id="tkSpd" min="20" max="200" step="5" style="padding:0"></div>
+      <div style="margin:12px 0 6px" class="lbl">Pratinjau</div>
+      <div class="tk-prev"><span id="tkPrev"></span></div>
+      <div class="row" style="margin-top:14px"><button class="btn pri" id="tkSave">💾 Simpan &amp; tampilkan sekarang</button><span class="muted" style="font-size:12px">Langsung berubah di semua layar room.</span></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-settings">
+    <h2 style="margin-top:0">Pengaturan</h2>
+    <div class="card panel">
+      <div class="grid2">
+        <div class="field"><label>Nama tempat usaha</label><input id="sVenue"></div>
+        <div class="field"><label>Mata uang</label><input id="sCur"></div>
+        <div class="field"><label>Pajak (%)</label><input id="sTax" type="number" min="0"></div>
+        <div class="field"><label>Service (%)</label><input id="sSvc" type="number" min="0"></div>
+        <div class="field"><label>Pembulatan billing (menit)</label><input id="sBlock" type="number" min="1"></div>
+        <div class="field"><label>Minimal billing room tanpa batas (menit)</label><input id="sMin" type="number" min="0"></div>
+        <div class="field"><label>Peringatan "hampir habis" (menit)</label><input id="sSoon" type="number" min="1"></div>
+        <div class="field"><label>PIN admin (untuk buka Desk dari komputer lain)</label><input id="sPin"></div>
+        <div class="field"><label>Port server (perlu restart)</label><input id="sPort" type="number"></div>
+        <div class="field"><label>Folder simpan download YouTube</label><input id="sDl" placeholder="Default: folder lagu pertama\YouTube"></div>
+      </div>
+      <label class="row" style="margin-top:12px"><input type="checkbox" id="sRoomYt" style="width:auto"> Izinkan room download lagu YouTube sendiri dari layar TV</label>
+      <div class="row" style="margin-top:14px"><button class="btn pri" id="sSave">💾 Simpan</button></div>
+    </div>
+    <div class="card panel">
+      <h3>Alamat jaringan</h3>
+      <div class="muted" style="font-size:13px" id="netInfo"></div>
+      <div class="row" style="margin-top:10px"><button class="btn red sm" id="resetPk">Ganti kunci player (link layar room lama tidak berlaku)</button></div>
+    </div>
+  </div>
+
+  <aside class="side" id="side"></aside>
+</div>
+
+<footer>
+  <span class="lbl">Panggilan</span>
+  <div class="calls" id="calls"><span class="muted">Tidak ada panggilan</span></div>
+  <span class="muted" id="netFoot"></span>
+</footer>
+
+<div id="pinGate"><div class="card" style="padding:26px;width:320px;display:flex;flex-direction:column;gap:12px"><div class="brand"><b>Karaoke-PC-F</b><small>STAFF DESK</small></div><input id="pinIn" type="password" placeholder="PIN admin"><button class="btn pri" id="pinOk">Masuk</button></div></div>
+
+<script src="/static/common.js"></script>
+<script>
+const flame = window.flame || null; // jembatan Electron (jika ada)
+let S = null, sel = store.get('deskSel', null), view = 'rooms', lastAlert = '';
+const cur = () => (S ? S.settings.currency : 'Rp');
+const R = (id) => S.rooms.find((r) => r.id === id);
+
+// ---------- modal ----------
+function modal(title, html, buttons = [{ t: 'Tutup' }]) {
+  return new Promise((resolve) => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal card"><h2>${esc(title)}</h2><div class="body">${html}</div><div class="row" style="justify-content:flex-end;flex-wrap:wrap">${buttons.map((b, i) => `<button class="btn ${b.c || ''}" data-i="${i}">${esc(b.t)}</button>`).join('')}</div></div>`;
+    document.body.appendChild(bg);
+    const close = (v) => { bg.remove(); resolve(v); };
+    bg.addEventListener('click', async (e) => {
+      if (e.target === bg) return close(null);
+      const b = e.target.closest('[data-i]'); if (!b) return;
+      const def = buttons[b.dataset.i];
+      if (def.fn) { try { const r = await def.fn(bg); if (r === false) return; close(r === undefined ? true : r); } catch (err) { toast(err.message); } }
+      else close(def.v ?? null);
+    });
+    const f = bg.querySelector('input,select'); if (f) setTimeout(() => f.focus(), 30);
+  });
+}
+
+// ---------- data ----------
+async function load() {
+  try { S = await api('/api/admin/state'); $('#pinGate').classList.remove('on'); render(); }
+  catch (e) { if (e.status === 401) { $('#pinGate').classList.add('on'); $('#pinIn').focus(); } else toast(e.message); }
+}
+$('#pinOk').onclick = () => { store.set('adminPin', $('#pinIn').value); load(); };
+$('#pinIn').onkeydown = (e) => { if (e.key === 'Enter') $('#pinOk').click(); };
+const reload = debounce(load, 120);
+let lastV = -1;
+listen((m) => {
+  if (m.v !== lastV) { lastV = m.v; reload(); }
+  if (m.alert && m.alert !== lastAlert) { lastAlert = m.alert; toast('🔔 ' + m.alert, 6000); beep(); setTimeout(() => { lastAlert = ''; }, 3000); }
+  if (m.yt && view === 'yt') loadYt();
+});
+let actx;
+function beep() { try { actx = actx || new AudioContext(); const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = 880; g.gain.value = .15; o.connect(g); g.connect(actx.destination); o.start(); g.gain.setTargetAtTime(0, actx.currentTime + .15, .05); o.stop(actx.currentTime + .5); } catch {} }
+
+// ---------- render ----------
+function render() {
+  $('#venue').textContent = S.settings.venueName;
+  applyTheme(S.settings.theme);
+  $('#kpiToday').textContent = rupiah(S.today.total, cur());
+  const cnt = {}; S.rooms.forEach((r) => { cnt[r.status] = (cnt[r.status] || 0) + 1; });
+  $('#counts').innerHTML = ['free', 'inuse', 'ending', 'overtime', 'timeup', 'calling', 'cleaning', 'maintenance'].map((k) => `<span><i style="background:${STATUS[k].color}"></i>${STATUS[k].label} ${cnt[k] || 0}</span>`).join('');
+  $('#netFoot').textContent = `Layar room & HP tamu terhubung ke ${S.baseUrl} · ${S.songCount} lagu`;
+  if (!R(sel)) sel = S.rooms[0] ? S.rooms[0].id : null;
+  renderRooms(); renderSide(); renderCalls(); renderActions();
+  if (view === 'songs') renderSongs();
+  if (view === 'menu') renderMenu();
+  if (view === 'settings') renderSettings();
+  if (view === 'display') { if (displayDirty) renderThemes(); else renderDisplay(); }
+  fillRoomSelects();
+}
+function cardInfo(r) {
+  const s = r.session;
+  if (!s) return `<div class="stt">${STATUS[r.status].label}</div>`;
+  const left = s.endsAt ? dur(s.endsAt - Date.now()) + ' lagi' : dur(Date.now() - s.start) + ' berjalan';
+  return `<div class="stt">${STATUS[r.status].label}</div>${s.guest ? `<div>${esc(s.guest)}</div>` : ''}<div class="money">${rupiah(r.bill.total, cur())}</div><div class="tm" data-tm="${r.id}">${left}</div>${s.now ? `<div class="ell" style="opacity:.85">🎵 ${esc(s.now.title)}</div>` : ''}`;
+}
+function renderRooms() {
+  const ic = { free: '', inuse: '🎤', ending: '⏳', overtime: '⏰', timeup: '⏰', calling: '🔔', cleaning: '🧹', maintenance: '🔧' };
+  $('#rooms').innerHTML = S.rooms.map((r) => {
+    const st = STATUS[r.status];
+    const newOrders = r.session ? r.session.orders.filter((o) => o.status === 'baru').length : 0;
+    return `<button class="rc ${r.status} ${r.id === sel ? 'sel' : ''}" data-room="${r.id}" style="background:linear-gradient(160deg,${st.color},${st.color}aa)">
+      <span class="ic">${ic[r.status] || ''}${newOrders ? ' 🛒' + newOrders : ''}</span>
+      <div class="nm">${esc(r.name)}</div><div class="ty">${esc(r.type || '')}${r.seats ? ' · ' + r.seats + ' kursi' : ''}</div>${cardInfo(r)}</button>`;
+  }).join('') + `<button class="rc" data-act="addroom" style="background:#ffffff08;border:2px dashed var(--line);align-items:center;justify-content:center;font-size:15px;color:var(--muted)">+ Tambah Room</button>`;
+}
+function renderSide() {
+  const r = R(sel), el = $('#side');
+  if (!r) { el.innerHTML = '<div class="empty">Belum ada room</div>'; return; }
+  const s = r.session;
+  let h = `<span class="lbl">${esc(r.type || 'Room')}${r.seats ? ' · ' + r.seats + ' kursi' : ''} · ${rupiah(r.rate, cur())}/jam</span><h2>${esc(r.name)}</h2>`;
+  if (!s) {
+    h += `<div class="muted">${STATUS[r.status].label}</div>`;
+    if (r.status === 'free') h += `<button class="btn pri" data-act="open">🔑 Buka Room</button>`;
+    if (r.status === 'cleaning') h += `<button class="btn grn" data-act="cleaned">🧹 Selesai dibersihkan</button>`;
+    if (r.status === 'maintenance') h += `<button class="btn" data-act="cleaned">✅ Selesai maintenance</button>`;
+    h += `<button class="btn" data-act="player">📺 Buka layar room</button>`;
+    el.innerHTML = h; return;
+  }
+  const b = r.bill;
+  h += `<div class="kv"><span>Status</span><b>${STATUS[r.status].label}</b><span>Tamu</span><b>${esc(s.guest || '-')} <a href="#" data-act="guestname" style="color:var(--cyan);font-size:11px">ubah</a></b>
+    <span>Mulai</span><b>${hhmm(s.start)}</b><span>Paket</span><b>${s.duration ? s.duration / 60 + ' jam (s/d ' + hhmm(s.endsAt) + ')' : 'Tanpa batas'}</b>
+    <span>Sisa</span><b data-tm="${r.id}"></b><span>Kode QR</span><b style="color:var(--yellow)">${s.code} <a href="#" data-act="newcode" style="color:var(--cyan);font-size:11px">ganti</a></b>
+    <span>Tagihan</span><b class="money">${rupiah(b.total, cur())}</b></div>`;
+  if (s.call) h += `<button class="btn red" data-act="ackcall">🔔 Room memanggil — tandai sudah ditangani</button>`;
+  h += `<div class="row" style="flex-wrap:wrap"><button class="btn sm" data-ctl="replay">⟲</button><button class="btn sm" data-ctl="toggle">⏯</button><button class="btn sm" data-act="skip">⏭</button><button class="btn sm" data-ctl="vol:down">🔉</button><button class="btn sm" data-ctl="vol:up">🔊</button><button class="btn sm" data-act="msgroom">💬</button><button class="btn sm" data-act="player">📺</button></div>`;
+  h += `<div><span class="lbl">Pesanan</span><div class="mini" style="margin-top:6px;display:flex;flex-direction:column;gap:4px">${s.orders.map((o) => `<div class="song-row" style="${o.status === 'batal' ? 'opacity:.4;text-decoration:line-through' : ''}"><div class="grow">${o.qty}× ${esc(o.name)}${o.note ? ` <span class="muted">(${esc(o.note)})</span>` : ''}</div>
+      ${o.status === 'baru' ? `<button class="btn sm grn" data-ost="${o.id}" data-s="diantar">Antar</button>` : ''}${o.status !== 'batal' ? `<button class="btn sm ghost" data-ost="${o.id}" data-s="batal">✕</button>` : ''}</div>`).join('') || '<span class="muted">Belum ada pesanan</span>'}</div>
+      <button class="btn sm" data-act="order" style="margin-top:6px">+ Tambah item</button></div>`;
+  h += `<div><span class="lbl">Sedang diputar</span><div class="mini" style="margin-top:6px">${s.now ? `<b>${esc(s.now.title)}</b> <span class="muted">${esc(s.now.artist || '')}</span>` : '<span class="muted">—</span>'}</div></div>`;
+  h += `<div><span class="lbl">Antrian (${s.queue.length})</span><div class="mini" style="margin-top:6px;display:flex;flex-direction:column;gap:4px">${s.queue.slice(0, 12).map((q) => `<div class="song-row"><div class="grow ell">${esc(q.title)} ${q.by ? `<span class="tag pink">${esc(q.by)}</span>` : ''}</div><button class="btn sm ghost" data-qtop="${q.qid}">⬆</button><button class="btn sm ghost" data-qrm="${q.qid}">✕</button></div>`).join('') || '<span class="muted">Kosong</span>'}</div></div>`;
+  h += `<div class="row" style="margin-top:auto"><button class="btn" data-act="extend">⏱️ Tambah waktu</button><button class="btn pri grow" data-act="checkout">💳 Checkout</button></div>`;
+  el.innerHTML = h;
+}
+function renderCalls() {
+  const calls = S.rooms.filter((r) => r.session && (r.session.call || r.session.orders.some((o) => o.status === 'baru') || r.session.timeup));
+  $('#calls').innerHTML = calls.map((r) => {
+    const s = r.session, parts = [];
+    if (s.call) parts.push('🔔 memanggil'); if (s.timeup) parts.push('⏰ waktu habis');
+    const n = s.orders.filter((o) => o.status === 'baru').length; if (n) parts.push(`🛒 ${n} pesanan baru`);
+    return `<button class="btn sm red" data-room="${r.id}">${esc(r.name)}: ${parts.join(', ')}</button>`;
+  }).join('') || '<span class="muted">Tidak ada panggilan</span>';
+}
+function renderActions() {
+  const r = R(sel), act = !!(r && r.session);
+  const en = { open: r && !act && r.status !== 'maintenance', extend: act, move: act, order: act, checkout: act, cleaned: r && !act && (r.status === 'cleaning' || r.status === 'maintenance'), maint: r && !act && r.status !== 'maintenance', player: !!r, editroom: !!r };
+  $$('#nav [data-act]').forEach((b) => { if (b.dataset.act in en) b.disabled = !en[b.dataset.act]; });
+}
+setInterval(() => {
+  $('#clock').textContent = hhmm(Date.now());
+  if (!S) return;
+  $$('[data-tm]').forEach((el) => {
+    const r = R(el.dataset.tm); if (!r || !r.session) return;
+    const s = r.session;
+    el.textContent = s.endsAt ? dur(s.endsAt - Date.now()) + (el.closest('.rc') ? ' lagi' : '') : dur(Date.now() - s.start) + ' berjalan';
+  });
+}, 1000);
+
+// ---------- aksi ----------
+const rapi = (act, body = {}) => api(`/api/rooms/${encodeURIComponent(sel)}/${act}`, body);
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button,a'); if (!t) return;
+  if (t.tagName === 'A') e.preventDefault();
+  try {
+    if (t.dataset.room) { sel = t.dataset.room; store.set('deskSel', sel); if (view !== 'rooms') setView('rooms'); render(); return; }
+    if (t.dataset.view) return setView(t.dataset.view);
+    if (t.dataset.ctl) return rapi('control', { action: t.dataset.ctl });
+    if (t.dataset.ost) return rapi('order-status', { id: t.dataset.ost, status: t.dataset.s });
+    if (t.dataset.qtop) return rapi('queue-top', { qid: t.dataset.qtop });
+    if (t.dataset.qrm) return rapi('queue-remove', { qid: t.dataset.qrm });
+    if (t.dataset.addsong) { const room = $('#sqRoom').value; if (!room) return toast('Pilih room aktif dulu'); await api(`/api/rooms/${room}/queue`, { songId: t.dataset.addsong, by: 'Operator' }); return toast('Masuk antrian ✔', 1500); }
+    if (t.dataset.yt) { await api('/api/yt/add', { url: t.dataset.yt, title: t.dataset.title, roomId: $('#ytRoom').value, by: 'Operator' }); toast('Download dimulai'); return loadYt(); }
+    if (t.dataset.ytcancel) return api('/api/yt/cancel', { id: t.dataset.ytcancel });
+    if (t.dataset.act) await action(t.dataset.act);
+  } catch (err) { toast(err.message); }
+});
+
+async function action(a) {
+  const r = R(sel);
+  if (a === 'open') {
+    const res = await modal('Buka Room ' + r.name, `<div class="field"><label>Nama tamu (opsional)</label><input id="mGuest" placeholder="mis. Kim / Ulang tahun Rina"></div>
+      <div class="field"><label>Durasi</label><div class="seg" id="mDur">${[[60, '1 jam'], [120, '2 jam'], [180, '3 jam'], [0, 'Tanpa batas']].map(([m, l], i) => `<button class="btn ${i === 0 ? 'on' : ''}" data-m="${m}" onclick="this.parentNode.querySelectorAll('.btn').forEach(b=>b.classList.remove('on'));this.classList.add('on')">${l}</button>`).join('')}<input id="mCustom" type="number" min="15" step="15" placeholder="Menit lain" style="width:120px"></div></div>
+      <div class="muted" style="font-size:12px">Tarif ${rupiah(r.rate, cur())}/jam. Saat waktu habis, lagu yang sedang diputar diselesaikan lalu layar menampilkan "Waktu habis".</div>`,
+      [{ t: 'Batal' }, { t: 'Buka Room', c: 'pri', fn: (m) => { const c = +$('#mCustom', m).value; return rapi('start', { guest: $('#mGuest', m).value, duration: c || +$('#mDur .on', m).dataset.m }); } }]);
+    if (res) toast('Room ' + r.name + ' dibuka ✔');
+  } else if (a === 'extend') {
+    await modal('Tambah waktu — ' + r.name, `<div class="seg">${[[30, '+30 menit'], [60, '+1 jam'], [120, '+2 jam'], [-30, '−30 menit']].map(([m, l]) => `<button class="btn" data-ext="${m}">${l}</button>`).join('')}<button class="btn vio" data-ext="u">Tanpa batas</button></div>`, [{ t: 'Tutup' }])
+      .then(() => {});
+  } else if (a === 'move') {
+    const free = S.rooms.filter((x) => !x.session && x.status === 'free');
+    if (!free.length) return toast('Tidak ada room kosong');
+    await modal('Pindah ' + r.name + ' ke…', `<select id="mTo">${free.map((x) => `<option value="${x.id}">${esc(x.name)} (${esc(x.type)} · ${rupiah(x.rate, cur())}/jam)</option>`).join('')}</select><div class="muted" style="font-size:12px">Antrian, pesanan dan waktu ikut pindah. Billing memakai tarif room baru.</div>`,
+      [{ t: 'Batal' }, { t: 'Pindahkan', c: 'pri', fn: async (m) => { const to = $('#mTo', m).value; await rapi('move', { to }); sel = to; } }]);
+  } else if (a === 'order') {
+    await modal('Tambah pesanan — ' + r.name, `<input id="mFind" placeholder="Cari menu…"><div id="mMenu" style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto">${S.menu.map((m) => `<div class="song-row" data-name="${esc(m.name.toLowerCase())}"><div class="grow"><b>${esc(m.name)}</b><div class="muted" style="font-size:12px">${esc(m.cat)} · ${rupiah(m.price, cur())}</div></div><input type="number" min="1" value="1" style="width:70px" id="q_${m.id}"><button class="btn sm pri" data-addorder="${m.id}">Tambah</button></div>`).join('')}</div>`, [{ t: 'Selesai' }]);
+  } else if (a === 'checkout') {
+    const b = await rapi('bill');
+    const items = b.items.map((o) => `<tr><td>${o.qty}× ${esc(o.name)}</td><td class="r">${rupiah(o.qty * o.price, cur())}</td></tr>`).join('');
+    const res = await modal('Checkout ' + r.name, `<table class="money"><tr><td>Room (${b.billedMin} menit ditagih · pakai ${b.usedMin} mnt)</td><td class="r">${rupiah(b.roomCharge, cur())}</td></tr>${items}
+      <tr><td>Service</td><td class="r">${rupiah(b.service, cur())}</td></tr><tr><td>Pajak</td><td class="r">${rupiah(b.tax, cur())}</td></tr>
+      <tr><td style="font-size:18px"><b>TOTAL</b></td><td class="r" style="font-size:22px"><b>${rupiah(b.total, cur())}</b></td></tr></table>
+      <div class="field"><label>Metode bayar</label><select id="mPay"><option>Tunai</option><option>QRIS</option><option>Debit</option><option>Transfer</option><option>Kartu Kredit</option></select></div>
+      <label class="row"><input type="checkbox" id="mPrint" checked style="width:auto"> Cetak struk</label>`,
+      [{ t: 'Batal' }, { t: 'Bayar & Tutup Room', c: 'pri', fn: async (m) => { const t = await rapi('checkout', { payment: $('#mPay', m).value }); if ($('#mPrint', m).checked) printReceipt(t); return t; } }]);
+    if (res) toast('Checkout selesai ✔ Room masuk status dibersihkan.');
+  } else if (a === 'cleaned') await rapi('status', { status: '' });
+  else if (a === 'maint') { if (confirm('Tandai room ' + r.name + ' maintenance?')) await rapi('status', { status: 'maintenance' }); }
+  else if (a === 'player') openPlayer(r);
+  else if (a === 'skip') await rapi('skip');
+  else if (a === 'ackcall') await rapi('ack-call');
+  else if (a === 'newcode') { if (confirm('Ganti kode QR? HP tamu yang sudah terhubung harus scan ulang.')) await rapi('new-code'); }
+  else if (a === 'guestname') { const g = prompt('Nama tamu:', r.session.guest || ''); if (g !== null) await rapi('guest', { guest: g }); }
+  else if (a === 'msgroom') { const t = prompt('Pesan ke layar ' + r.name + ':'); if (t) await rapi('message', { text: t, by: 'Staf' }); }
+  else if (a === 'broadcast') { const t = prompt('Pengumuman ke SEMUA layar room:'); if (t) { await api('/api/broadcast', { text: t }); toast('Pengumuman terkirim'); } }
+  else if (a === 'addroom' || a === 'editroom') {
+    const x = a === 'editroom' ? r : { name: '', type: 'Medium', seats: 6, rate: 100000 };
+    await modal(a === 'addroom' ? 'Tambah Room' : 'Edit Room ' + x.name, `<div class="grid2"><div class="field"><label>Nama / nomor</label><input id="mN" value="${esc(x.name)}"></div><div class="field"><label>Tipe</label><input id="mT" value="${esc(x.type || '')}" list="types"><datalist id="types"><option>Small<option>Medium<option>Large<option>VIP<option>Party</datalist></div>
+      <div class="field"><label>Kapasitas (orang)</label><input id="mS" type="number" value="${x.seats || 0}"></div><div class="field"><label>Tarif per jam</label><input id="mR" type="number" value="${x.rate}"></div></div>`,
+      [...(a === 'editroom' ? [{ t: 'Hapus room', c: 'red', fn: async () => { if (!confirm('Hapus room ini?')) return false; await api('/api/rooms/' + x.id, null, 'DELETE'); } }] : []), { t: 'Batal' },
+        { t: 'Simpan', c: 'pri', fn: (m) => api('/api/rooms', { id: x.id, name: $('#mN', m).value, type: $('#mT', m).value, seats: $('#mS', m).value, rate: $('#mR', m).value }) }]);
+  } else if (a === 'shift') shiftReport();
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-ext],[data-addorder]'); if (!t) return;
+  try {
+    if (t.dataset.ext) { await rapi('extend', t.dataset.ext === 'u' ? { unlimited: true } : { minutes: +t.dataset.ext }); toast('Waktu diperbarui ✔', 1500); }
+    if (t.dataset.addorder) { await rapi('order', { itemId: t.dataset.addorder, qty: $('#q_' + t.dataset.addorder).value }); toast('Ditambahkan ✔', 1200); }
+  } catch (err) { toast(err.message); }
+});
+document.addEventListener('input', (e) => { if (e.target.id === 'mFind') { const q = e.target.value.toLowerCase(); $$('#mMenu [data-name]').forEach((el) => { el.style.display = el.dataset.name.includes(q) ? '' : 'none'; }); } });
+
+function openPlayer(r) {
+  const url = `${S.baseUrl}/player/${r.id}?pk=${S.settings.playerKey}`;
+  const local = `${location.origin}/player/${r.id}?pk=${S.settings.playerKey}`;
+  modal('Layar room ' + r.name, `<div class="muted" style="font-size:13px">Buka link ini di komputer/TV room (browser Chrome/Edge layar penuh, atau aplikasi Karaoke-PC-F mode Layar Room):</div>
+    <input readonly value="${esc(url)}" onclick="this.select()">
+    <div style="text-align:center"><img src="/api/qr?text=${encodeURIComponent(url)}" style="width:170px;border-radius:8px"></div>`,
+    [{ t: 'Salin link', fn: () => { navigator.clipboard && navigator.clipboard.writeText(url); toast('Link disalin'); return false; } },
+     { t: flame ? 'Buka di layar kedua komputer ini' : 'Buka di tab baru', c: 'pri', fn: () => { flame ? flame.openPlayer(local, r.name) : window.open(local, '_blank'); } }]);
+}
+
+function printReceipt(t) {
+  const st = S.settings, logo = st.logoVer ? `<img src="/logo?v=${st.logoVer}" style="max-width:60%;max-height:70px">` : '';
+  const line = (a, b) => `<tr><td>${a}</td><td style="text-align:right">${b}</td></tr>`;
+  const html = `<html><head><style>body{font:12px monospace;width:72mm;margin:0 auto;padding:6px}table{width:100%;border-collapse:collapse}h3{margin:4px 0}hr{border:0;border-top:1px dashed #000}</style></head><body onload="print();setTimeout(()=>close(),500)">
+    <div style="text-align:center">${logo}<h3>${esc(st.venueName)}</h3>${esc(t.id)}<br>${new Date(t.end).toLocaleString('id-ID')}</div><hr>
+    <table>${line('Room', esc(t.room))}${t.guest ? line('Tamu', esc(t.guest)) : ''}${line('Jam', hhmm(t.start) + ' - ' + hhmm(t.end))}</table><hr>
+    <table>${line(`Sewa room ${t.billedMin} mnt`, rupiah(t.roomCharge, st.currency))}${t.items.map((o) => line(`${o.qty}x ${esc(o.name)}`, rupiah(o.qty * o.price, st.currency))).join('')}</table><hr>
+    <table>${line('Service', rupiah(t.service, st.currency))}${line('Pajak', rupiah(t.tax, st.currency))}${line('<b>TOTAL</b>', '<b>' + rupiah(t.total, st.currency) + '</b>')}${line('Bayar', esc(t.payment))}</table><hr>
+    <div style="text-align:center">Terima kasih 🎤<br>Sampai jumpa lagi!</div></body></html>`;
+  const w = window.open('', '_blank', 'width=360,height=600'); if (!w) return toast('Popup diblokir — izinkan popup untuk cetak');
+  w.document.write(html); w.document.close();
+}
+
+async function shiftReport() {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const r = await api(`/api/transactions?from=${d0.getTime()}`);
+  const by = {}; r.items.forEach((t) => { by[t.payment] = (by[t.payment] || 0) + t.total; });
+  const room = r.items.reduce((a, t) => a + t.roomCharge, 0), fnb = r.items.reduce((a, t) => a + t.fnb, 0);
+  const top = await api('/api/top-songs');
+  modal('Laporan Shift — ' + d0.toLocaleDateString('id-ID'), `<table class="money"><tr><td>Jumlah transaksi</td><td class="r">${r.items.length}</td></tr><tr><td>Pendapatan room</td><td class="r">${rupiah(room, cur())}</td></tr><tr><td>Pendapatan F&amp;B</td><td class="r">${rupiah(fnb, cur())}</td></tr>
+    ${Object.entries(by).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="r">${rupiah(v, cur())}</td></tr>`).join('')}<tr><td><b>TOTAL</b></td><td class="r"><b>${rupiah(r.total, cur())}</b></td></tr></table>
+    <span class="lbl">Lagu terpopuler</span><div style="font-size:13px">${top.items.slice(0, 10).map((s, i) => `${i + 1}. ${esc(s.title)} <span class="muted">(${s.plays}×)</span>`).join('<br>') || '-'}</div>`, [{ t: 'Tutup' }]);
+}
+
+// ---------- views ----------
+function setView(v) {
+  view = v;
+  $$('#nav [data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
+  $$('.view').forEach((el) => el.classList.toggle('on', el.id === 'v-' + v));
+  $('#side').style.display = v === 'rooms' ? '' : 'none';
+  $('#wrap').classList.toggle('noside', v !== 'rooms');
+  if (v === 'trx') loadTrx();
+  if (v === 'yt') loadYt();
+  if (v === 'display') { displayDirty = false; renderDisplay(); }
+  render();
+}
+function fillRoomSelects() {
+  const act = S.rooms.filter((r) => r.session);
+  const opts = act.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
+  for (const id of ['#sqRoom', '#ytRoom']) {
+    const el = $(id), v = el.value;
+    el.innerHTML = (id === '#ytRoom' ? '<option value="">(Hanya simpan ke hardisk)</option>' : '<option value="">— pilih room aktif —</option>') + opts;
+    el.value = [...el.options].some((o) => o.value === v) ? v : (id === '#sqRoom' && act.find((r) => r.id === sel) ? sel : '');
+  }
+}
+
+// transaksi
+$('#trxDate').valueAsDate = new Date();
+$('#trxDate').onchange = loadTrx;
+let trx = [];
+async function loadTrx() {
+  const d = $('#trxDate').valueAsDate || new Date(); const from = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const r = await api(`/api/transactions?from=${from}&to=${from + 864e5}`); trx = r.items;
+  $('#trxTotal').textContent = rupiah(r.total, cur()); $('#trxCount').textContent = r.items.length + ' transaksi';
+  $('#trxBody').innerHTML = r.items.map((t) => `<tr><td>${esc(t.id)}</td><td>${esc(t.room)}</td><td>${esc(t.guest || '')}</td><td>${hhmm(t.start)}–${hhmm(t.end)}</td><td class="r">${t.usedMin} mnt</td><td class="r money">${rupiah(t.roomCharge, cur())}</td><td class="r money">${rupiah(t.fnb, cur())}</td><td class="r money"><b>${rupiah(t.total, cur())}</b></td><td>${esc(t.payment)}</td><td><button class="btn sm" data-reprint="${esc(t.id)}">🖨</button></td></tr>`).join('') || '<tr><td colspan="10" class="empty">Belum ada transaksi</td></tr>';
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-reprint]'); if (b) printReceipt(trx.find((t) => t.id === b.dataset.reprint)); });
+$('#trxCsv').onclick = () => {
+  const head = ['No', 'Room', 'Tamu', 'Mulai', 'Selesai', 'Menit', 'Room', 'FnB', 'Service', 'Pajak', 'Total', 'Bayar'];
+  const rows = trx.map((t) => [t.id, t.room, t.guest, new Date(t.start).toLocaleString('id-ID'), new Date(t.end).toLocaleString('id-ID'), t.usedMin, t.roomCharge, t.fnb, t.service, t.tax, t.total, t.payment]);
+  const csv = [head, ...rows].map((r) => r.map((c) => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' })); a.download = 'transaksi-' + $('#trxDate').value + '.csv'; a.click();
+};
+
+// lagu & hardisk
+function renderSongs() {
+  $('#dirs').innerHTML = S.dirs.map((d) => {
+    const isDl = !S.settings.songDirs.includes(d.path);
+    return `<div class="dirrow"><span class="dot" style="background:${d.ok ? 'var(--green)' : 'var(--red)'}"></span><div class="grow"><b class="ell" style="display:block">${esc(d.path)}</b><span class="muted" style="font-size:12px">${d.ok ? d.count + ' lagu' : 'Tidak ditemukan — hardisk belum dicolok?'}${isDl ? ' · folder download YouTube' : ''}</span></div>${isDl ? '' : `<button class="btn sm red" data-rmdir="${esc(d.path)}">Lepas</button>`}</div>`;
+  }).join('') || '<div class="muted">Belum ada folder.</div>';
+  $('#scanInfo').textContent = S.scanning ? 'Sedang memindai…' : `${S.songCount} lagu terdaftar`;
+}
+const saveDirs = (dirs) => api('/api/settings', { songDirs: dirs });
+$('#addDir').onclick = async () => { const d = $('#newDir').value.trim(); if (!d) return; await saveDirs([...S.settings.songDirs, d]); $('#newDir').value = ''; toast('Folder ditambahkan, memindai lagu…'); };
+$('#pickDir').onclick = async () => { if (flame) { const d = await flame.pickFolder(); if (d) $('#newDir').value = d; } else toast('Ketik alamat folder secara manual (mis. E:\\KARAOKE)'); };
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-rmdir]'); if (b && confirm('Lepas folder ini dari perpustakaan? (file tidak dihapus)')) saveDirs(S.settings.songDirs.filter((d) => d !== b.dataset.rmdir)); });
+$('#rescan').onclick = () => api('/api/rescan', {}).then(() => toast('Memindai ulang…'));
+$('#sq').oninput = debounce(async () => {
+  const r = await api('/api/songs?limit=50&q=' + encodeURIComponent($('#sq').value));
+  $('#sres').innerHTML = r.items.map((s) => `<div class="song-row">${coverHTML(s, 40)}<div class="grow"><div class="t ell">${esc(s.title)}</div><div class="a">${esc(s.artist || s.folder)} · ${s.type}${s.hasLyrics ? ' · lirik' : ''} · diputar ${s.plays}×</div></div><button class="btn sm pri" data-addsong="${s.id}">+ Antrikan</button></div>`).join('') || '<div class="empty">Tidak ada</div>';
+}, 200);
+
+// youtube
+async function loadYt() {
+  const st = await api('/api/yt/status');
+  $('#ytSetup').innerHTML = `<div class="row" style="flex-wrap:wrap"><div class="grow"><b>Mesin download:</b> ${st.ytdlp ? '<span style="color:var(--green)">yt-dlp siap ✔</span>' : '<span style="color:var(--red)">belum terpasang</span>'} · <b>Kualitas:</b> ${st.ffmpeg ? 'HD 720p (ffmpeg ✔)' : 'standar 360p — taruh ffmpeg.exe di folder <code>' + esc(st.binDir) + '</code> untuk 720p'}
+    <div class="muted" style="font-size:12px;margin-top:4px">Tersimpan ke: <code>${esc(st.outDir)}</code>${st.installMsg ? ' · ' + esc(st.installMsg) : ''}</div></div>
+    ${st.ytdlp ? '<button class="btn sm" id="ytUpd">Perbarui yt-dlp</button>' : `<button class="btn pri" id="ytInst" ${st.installing ? 'disabled' : ''}>⬇ Pasang yt-dlp</button>`}</div>
+    <div class="muted" style="font-size:11px;margin-top:8px">Catatan: pastikan tempat usaha punya lisensi untuk memutar lagu secara komersial (mis. lewat LMKN), dan hanya unduh video yang diizinkan pemiliknya.</div>`;
+  const ins = $('#ytInst'); if (ins) ins.onclick = () => api('/api/yt/install', {});
+  const up = $('#ytUpd'); if (up) up.onclick = async () => { toast('Memperbarui…'); const r = await api('/api/yt/update', {}); toast(r.message); };
+  $('#ytJobs').innerHTML = st.jobs.map((j) => `<div class="song-row" style="flex-wrap:wrap"><div class="grow"><div class="t ell">${esc(j.title)}</div><div class="a">${esc(j.status)}${j.status === 'download' ? ` · ${Math.round(j.progress)}% ${esc(j.speed)} ${j.eta ? '· sisa ' + esc(j.eta) : ''}` : ''}${j.roomId && R(j.roomId) ? ' · untuk ' + esc(R(j.roomId).name) : ''}${j.by ? ' · ' + esc(j.by) : ''}${j.error ? ' · <span style="color:var(--red)">' + esc(j.error) + '</span>' : ''}</div>
+    ${['download', 'proses'].includes(j.status) ? `<div class="prog"><i style="width:${j.progress}%"></i></div>` : ''}</div>${['antri', 'download'].includes(j.status) ? `<button class="btn sm red" data-ytcancel="${j.id}">Batal</button>` : ''}</div>`).join('') || '<div class="muted">Belum ada download.</div>';
+}
+async function ytSearch() {
+  const q = $('#ytq').value.trim(); if (!q) return;
+  if (/youtu\.?be/.test(q)) { await api('/api/yt/add', { url: q, roomId: $('#ytRoom').value, by: 'Operator' }).then(() => { toast('Download dimulai'); $('#ytq').value = ''; loadYt(); }).catch((e) => toast(e.message)); return; }
+  $('#ytRes').innerHTML = '<div class="empty">Mencari…</div>';
+  try {
+    const r = await api('/api/yt/search', { q, karaoke: $('#ytKara').checked });
+    $('#ytRes').innerHTML = r.items.map((x) => `<div class="yt-item"><img src="${esc(x.thumb)}" alt="" onerror="this.style.visibility='hidden'"><div class="grow"><b>${esc(x.title)}</b><div class="muted" style="font-size:12px">${esc(x.channel)}${x.duration ? ' · ' + Math.floor(x.duration / 60) + ':' + String(x.duration % 60).padStart(2, '0') : ''}</div></div><button class="btn sm pri" data-yt="${esc(x.url)}" data-title="${esc(x.title)}">⬇ Download</button></div>`).join('') || '<div class="empty">Tidak ada hasil</div>';
+  } catch (e) { $('#ytRes').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+$('#ytGo').onclick = ytSearch; $('#ytq').onkeydown = (e) => { if (e.key === 'Enter') ytSearch(); };
+$('#ytClear').onclick = () => api('/api/yt/clear', {});
+
+// menu
+function renderMenu() {
+  $('#menuBody').innerHTML = S.menu.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.cat)}</td><td class="r money">${rupiah(m.price, cur())}</td><td class="r"><button class="btn sm" data-editmenu="${m.id}">Edit</button> <button class="btn sm red" data-delmenu="${m.id}">Hapus</button></td></tr>`).join('');
+}
+async function editMenu(m = { name: '', cat: 'Minuman', price: 0 }) {
+  await modal(m.id ? 'Edit menu' : 'Tambah menu', `<div class="field"><label>Nama</label><input id="mmN" value="${esc(m.name)}"></div><div class="grid2"><div class="field"><label>Kategori</label><input id="mmC" value="${esc(m.cat)}" list="cats"><datalist id="cats"><option>Minuman<option>Makanan<option>Snack<option>Paket</datalist></div><div class="field"><label>Harga</label><input id="mmP" type="number" value="${m.price}"></div></div>`,
+    [{ t: 'Batal' }, { t: 'Simpan', c: 'pri', fn: (x) => api('/api/menu', { id: m.id, name: $('#mmN', x).value, cat: $('#mmC', x).value, price: $('#mmP', x).value }) }]);
+}
+$('#addMenu').onclick = () => editMenu();
+document.addEventListener('click', (e) => {
+  const ed = e.target.closest('[data-editmenu]'); if (ed) editMenu(S.menu.find((m) => m.id === ed.dataset.editmenu));
+  const dl = e.target.closest('[data-delmenu]'); if (dl && confirm('Hapus menu ini?')) api('/api/menu/' + dl.dataset.delmenu, null, 'DELETE');
+});
+
+// tampilan layar: logo + running text
+let displayDirty = false;
+function renderThemes() {
+  $('#themes').innerHTML = THEMES.map((t) => `<button class="th ${S.settings.theme === t.id ? 'on' : ''}" data-theme-pick="${t.id}">
+    <div class="pv" style="background:radial-gradient(80% 90% at 90% 100%, ${t.c[1]}44, transparent), ${t.c[0]}"><b style="background-image:linear-gradient(90deg,${t.c[1]},${t.c[2]})">Karaoke-PC-F</b>
+    <div class="sw">${t.c.slice(1).map((c) => `<i style="background:${c}"></i>`).join('')}</div></div><div class="nm">${S.settings.theme === t.id ? '✔ ' : ''}${esc(t.name)}</div></button>`).join('');
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-theme-pick]'); if (!b) return;
+  applyTheme(b.dataset.themePick); S.settings.theme = b.dataset.themePick; renderThemes();
+  await api('/api/settings', { theme: b.dataset.themePick }); toast('Tema diganti di semua layar ✔');
+});
+function renderDisplay() {
+  renderThemes();
+  const st = S.settings;
+  $('#tkOn').checked = !!st.tickerOn; $('#tkText').value = st.tickerText || ''; $('#tkSpd').value = st.tickerSpeed || 60; $('#logoPos').value = st.logoPos || 'top-right';
+  updTkPrev();
+  const lp = $('#logoPrev');
+  if (st.logoVer) { lp.style.backgroundImage = `url(/logo?v=${st.logoVer})`; lp.textContent = ''; } else { lp.style.backgroundImage = ''; lp.textContent = 'Belum ada logo'; }
+}
+function updTkPrev() {
+  $('#tkPrev').textContent = $('#tkText').value.split(/\n+/).map((x) => x.trim()).filter(Boolean).join('     ★     ');
+  $('#tkSpdV').textContent = $('#tkSpd').value;
+  $('#tkPrev').style.animationDuration = Math.max(6, ($('#tkPrev').scrollWidth || 1000) / ($('#tkSpd').value * 1.5) / 2) + 's';
+}
+['tkText', 'tkSpd', 'tkOn'].forEach((id) => $('#' + id).addEventListener('input', () => { displayDirty = true; updTkPrev(); }));
+$('#tkSave').onclick = async () => { await api('/api/settings', { tickerOn: $('#tkOn').checked, tickerText: $('#tkText').value, tickerSpeed: +$('#tkSpd').value, logoPos: $('#logoPos').value }); displayDirty = false; toast('Running text diperbarui di semua layar ✔'); };
+$('#logoPos').onchange = () => api('/api/settings', { logoPos: $('#logoPos').value });
+$('#logoUp').onclick = () => $('#logoFile').click();
+$('#logoFile').onchange = () => {
+  const f = $('#logoFile').files[0]; if (!f) return;
+  const rd = new FileReader(); rd.onload = async () => { try { await api('/api/logo', { data: rd.result }); toast('Logo terpasang ✔'); } catch (e) { toast(e.message); } }; rd.readAsDataURL(f);
+  $('#logoFile').value = '';
+};
+$('#logoDel').onclick = () => { if (confirm('Hapus logo?')) api('/api/logo', { data: '' }); };
+
+// pengaturan
+function renderSettings() {
+  const st = S.settings;
+  if (document.activeElement && document.activeElement.closest('#v-settings')) return;
+  $('#sVenue').value = st.venueName; $('#sCur').value = st.currency; $('#sTax').value = st.taxPct; $('#sSvc').value = st.servicePct;
+  $('#sBlock').value = st.billBlockMin; $('#sMin').value = st.minMinutes; $('#sSoon').value = st.endingSoonMin; $('#sPin').value = st.adminPin; $('#sPort').value = st.port;
+  $('#sDl').value = st.downloadDir || ''; $('#sRoomYt').checked = !!st.roomYoutube;
+  $('#netInfo').innerHTML = `Desk: <code>${esc(S.baseUrl)}</code> (komputer lain butuh PIN)<br>IP komputer ini: ${S.ips.map((i) => `<code>${esc(i.address)}</code> (${esc(i.name)})`).join(', ') || '-'}<br>Pastikan PC room &amp; WiFi tamu di jaringan yang sama, dan port ${st.port} diizinkan di Windows Firewall.`;
+}
+$('#sSave').onclick = async () => {
+  await api('/api/settings', { venueName: $('#sVenue').value, currency: $('#sCur').value, taxPct: +$('#sTax').value, servicePct: +$('#sSvc').value, billBlockMin: +$('#sBlock').value, minMinutes: +$('#sMin').value, endingSoonMin: +$('#sSoon').value, adminPin: $('#sPin').value, port: +$('#sPort').value, downloadDir: $('#sDl').value.trim(), roomYoutube: $('#sRoomYt').checked });
+  if (!['127.0.0.1', 'localhost'].includes(location.hostname)) store.set('adminPin', $('#sPin').value);
+  toast('Pengaturan disimpan ✔');
+};
+$('#resetPk').onclick = () => { if (confirm('Semua layar room harus dibuka ulang dengan link baru. Lanjut?')) api('/api/settings/reset-player-key', {}); };
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Karaoke-PC-F</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: grid; place-items: center; padding: 30px; overflow: auto; }
+  .box { width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 16px; }
+  .opt { padding: 20px; display: flex; gap: 16px; align-items: flex-start; text-align: left; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); }
+  .opt:hover { border-color: var(--pink); }
+  .opt .ic { font-size: 40px; }
+  .opt b { font-size: 18px; } .opt p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+  #roomForm { display: none; flex-direction: column; gap: 10px; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="box">
+  <div class="brand"><b style="font-size:34px">Karaoke-PC-F</b><small>KARAOKE SYSTEM</small></div>
+  <div class="muted">Komputer ini dipakai sebagai apa?</div>
+  <button class="opt" id="desk"><span class="ic">🖥️</span><div><b>Komputer Kasir / Server (Desk)</b><p>Menyimpan lagu (hardisk internal/eksternal), billing room, pesanan, download YouTube. Layar room bisa dibuka di monitor kedua komputer ini.</p></div></button>
+  <button class="opt" id="room"><span class="ic">📺</span><div><b>Layar Room (TV di dalam room)</b><p>Memutar lagu dari komputer kasir lewat jaringan. Butuh link layar room dari Desk.</p></div></button>
+  <div id="roomForm" class="card" style="padding:16px">
+    <label class="muted" style="font-size:13px">Tempel link layar room dari Desk (menu "Buka Layar Room"):</label>
+    <input id="url" placeholder="http://192.168.1.10:8168/player/r101?pk=...">
+    <button class="btn pri" id="go">Mulai layar room</button>
+  </div>
+  <label class="row muted" style="font-size:13px"><input type="checkbox" id="rem" checked style="width:auto"> Ingat pilihan ini (langsung terbuka saat aplikasi dijalankan). Bisa diganti di menu Aplikasi.</label>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+window.flame.getConfig().then((c) => { if (c.roomUrl) $('#url').value = c.roomUrl; });
+$('#desk').onclick = () => window.flame.launch('desk', '', $('#rem').checked);
+$('#room').onclick = () => { $('#roomForm').style.display = 'flex'; $('#url').focus(); };
+$('#go').onclick = () => {
+  const u = $('#url').value.trim();
+  if (!/^https?:\/\/.+\/player\/.+pk=/.test(u)) { alert('Link tidak valid. Salin link dari Desk → Buka Layar Room.'); return; }
+  window.flame.launch('room', u, $('#rem').checked);
+};
+</script>
+</body>
+</html>

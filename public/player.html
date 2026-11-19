@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karaoke-PC-F — Room</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  body { display: grid; grid-template-rows: auto auto 1fr auto auto; height: 100vh; }
+  #ticker { overflow: hidden; white-space: nowrap; background: linear-gradient(90deg, var(--pink), var(--violet)); color: #fff; font-weight: 800; font-size: 18px; padding: 7px 0; display: none; }
+  #ticker.on { display: block; }
+  #ticker .tk { display: inline-block; padding-left: 100%; animation: tick linear infinite; }
+  @keyframes tick { to { transform: translateX(-100%); } }
+  body.isfull #ticker, body.closed #ticker { position: fixed; left: 0; right: 0; bottom: 0; z-index: 250; font-size: clamp(18px, 2.4vw, 40px); padding: 10px 0; }
+  .brand img.logo { height: 46px; max-width: 180px; object-fit: contain; display: block; }
+  #stageLogo { position: absolute; max-height: 14%; max-width: 22%; object-fit: contain; display: none; filter: drop-shadow(0 2px 8px #000a); pointer-events: none; }
+  #stage.full #stageLogo.has { display: block; }
+  #stageLogo.top-right { top: 3%; right: 2.5%; } #stageLogo.top-left { top: 3%; left: 2.5%; } #stageLogo.bottom-right { bottom: 12%; right: 2.5%; } #stageLogo.bottom-left { bottom: 12%; left: 2.5%; }
+  #stage.full .full-hint { top: auto; bottom: 70px; }
+  #closedLogo { max-width: 50vw; max-height: 38vh; object-fit: contain; display: none; margin: 0 auto 10px; }
+  #closedLogo.has { display: block; }
+  header.top { display: grid; grid-template-columns: auto 1.3fr 1fr auto auto; gap: 20px; align-items: center; padding: 12px 22px; border-bottom: 2px solid color-mix(in srgb, var(--pink) 35%, transparent); background: var(--bar); }
+  .np-title { font-weight: 800; font-size: 16px; margin-top: 4px; }
+  .bar { height: 4px; background: #ffffff1a; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--pink), var(--cyan)); }
+  .qrbox { display: flex; gap: 10px; align-items: center; }
+  .qrbox img { width: 62px; height: 62px; border-radius: 6px; background: #fff; }
+  .qrbox .u { font-size: 10px; color: var(--muted); max-width: 170px; word-break: break-all; }
+  .clock { text-align: right; } .clock b { font-size: 22px; font-weight: 400; display: block; }
+  .clock span { font-size: 12px; color: var(--yellow); }
+  nav.tabs { display: flex; gap: 2px; padding: 0 16px; background: var(--bar); border-bottom: 1px solid var(--line); align-items: center; overflow-x: auto; }
+  nav.tabs button { background: none; padding: 12px 12px 10px; font-size: 13px; font-weight: 650; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+  nav.tabs button.on { color: var(--text); border-color: var(--pink); }
+  nav.tabs .sp { flex: 1; }
+  main { overflow: hidden; position: relative; }
+  section.tab { display: none; height: 100%; padding: 18px 22px; overflow-y: auto; }
+  section.tab.on { display: block; }
+  #tab-home.on { display: grid; grid-template-columns: minmax(340px, 38%) 1fr; gap: 18px; }
+  .homeleft { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  #stageHome { aspect-ratio: 16/9; border-radius: 14px; overflow: hidden; background: #000; position: relative; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 14px; }
+  .tile { border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font-weight: 800; font-size: 17px; color: #fff; box-shadow: inset 0 1px 0 #fff3, 0 10px 30px #0004; transition: transform .12s; min-height: 140px; }
+  .tile:hover { transform: translateY(-3px) scale(1.02); }
+  .tile svg { width: 40px; height: 40px; }
+  .upnext .song-row { padding: 8px 10px; font-size: 13px; }
+  footer.ctl { display: flex; gap: 18px; padding: 10px 18px 12px; background: var(--bar); border-top: 2px solid color-mix(in srgb, var(--pink) 35%, transparent); overflow-x: auto; align-items: flex-end; }
+  .grp .lbl { font-size: 9px; color: var(--muted); margin-bottom: 6px; display: block; }
+  .grp .row { gap: 5px; }
+  .val { min-width: 44px; text-align: center; font-size: 13px; font-weight: 700; color: var(--cyan); }
+  /* stage */
+  #stage { position: absolute; inset: 0; background: #000; overflow: hidden; }
+  #stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+  #stage.full { position: fixed; inset: 0; z-index: 60; }
+  #viz { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+  #stage.audio #viz { display: block; }
+  #stage.audio video { opacity: 0; }
+  .audio-title { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 20px; pointer-events: none; }
+  #stage.audio .audio-title { display: grid; }
+  .audio-title b { font-size: clamp(22px, 4vw, 64px); font-weight: 900; background: var(--flame); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #lyrics { position: absolute; left: 0; right: 0; bottom: 8%; text-align: center; pointer-events: none; padding: 0 5%; }
+  #lyrics .l1 { font-size: clamp(16px, 3.4vw, 56px); font-weight: 900; color: #fff; text-shadow: 0 0 6px #000, 0 3px 0 #000, 0 0 20px var(--pink); }
+  #lyrics .l2 { font-size: clamp(12px, 2.2vw, 34px); font-weight: 700; color: #ffffffaa; text-shadow: 0 2px 4px #000; margin-top: 6px; }
+  #stage:not(.full) #lyrics .l2 { display: none; }
+  body.isfull #lyrics { bottom: 13%; }
+  #danmaku, #fx, #lights { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .dm { position: absolute; white-space: nowrap; font-weight: 800; font-size: clamp(14px, 2.4vw, 38px); color: #fff; text-shadow: 0 2px 4px #000, 0 0 10px #000; animation: fly linear forwards; left: 100%; }
+  .dm small { color: var(--yellow); font-size: .6em; margin-right: 8px; }
+  @keyframes fly { to { transform: translateX(calc(-100vw - 100%)); } }
+  .fxe { position: absolute; bottom: -60px; font-size: clamp(28px, 5vw, 80px); animation: rise 3.2s ease-out forwards; }
+  @keyframes rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-85vh) scale(1.3) rotate(var(--r)); opacity: 0; } }
+  #lights { mix-blend-mode: screen; opacity: 0; transition: opacity 1s; }
+  #lights.on { opacity: .55; }
+  #lights.birthday { background: conic-gradient(from 0deg, #ff3d8b, #f5b83d, #27c28a, #38d6f5, #8b5cf6, #ff3d8b); animation: spin 6s linear infinite; inset: -50%; }
+  #lights.romantic { background: radial-gradient(circle at 30% 30%, #ff2d6f, transparent 50%), radial-gradient(circle at 70% 70%, #b0204f, transparent 50%); animation: pulse 4s ease-in-out infinite; }
+  #lights.party { animation: strobe 1.2s steps(4) infinite; }
+  #lights.chill { background: radial-gradient(circle at 20% 80%, #1f6fff, transparent 55%), radial-gradient(circle at 80% 20%, #22c1c3, transparent 55%); animation: pulse 7s ease-in-out infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @keyframes strobe { 0% { background: #ff3d8b; } 25% { background: #38d6f5; } 50% { background: #f5b83d; } 75% { background: #8b5cf6; } }
+  .full-hint { position: absolute; top: 14px; right: 16px; font-size: 12px; color: #fff8; display: none; }
+  #stage.full .full-hint { display: block; }
+  .full-np { position: absolute; top: 16px; left: 18px; display: none; gap: 14px; align-items: center; background: #0008; padding: 10px 14px; border-radius: 12px; backdrop-filter: blur(6px); }
+  #stage.full .full-np { display: flex; }
+  .full-np img { width: 70px; height: 70px; background: #fff; border-radius: 6px; }
+  .intro { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(circle, color-mix(in srgb, var(--bg2) 93%, transparent), #000e); text-align: center; animation: fadeout .6s 3.4s forwards; pointer-events: none; }
+  .intro b { display: block; font-size: clamp(22px, 4.5vw, 72px); font-weight: 900; }
+  .intro span { font-size: clamp(14px, 2vw, 30px); color: var(--cyan); }
+  @keyframes fadeout { to { opacity: 0; visibility: hidden; } }
+  .overlay { position: fixed; inset: 0; z-index: 200; display: none; place-items: center; text-align: center; background: #000; }
+  .overlay.on { display: grid; }
+  .overlay h1 { font-size: clamp(28px, 5vw, 80px); margin: 10px 0; }
+  #announce { position: fixed; top: 0; left: 0; right: 0; z-index: 210; background: var(--flame); color: #fff; font-weight: 800; font-size: clamp(16px, 2vw, 30px); padding: 14px; text-align: center; transform: translateY(-110%); transition: transform .4s; }
+  #announce.on { transform: none; }
+  .list2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 10px; }
+  .searchbar { display: flex; gap: 10px; margin-bottom: 14px; }
+  .searchbar input { font-size: 18px; padding: 14px 16px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 10px 14px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line); font-weight: 650; }
+  .chip small { color: var(--muted); margin-left: 6px; }
+  h3.sec { margin: 0 0 12px; font-size: 22px; }
+  .bigbtns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .bigbtns .btn { padding: 18px; font-size: 16px; }
+  .emo { font-size: 30px; padding: 16px !important; }
+  .yt-item { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 12px; background: #ffffff08; }
+  .yt-item img { width: 128px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: #000; }
+  .prog { height: 6px; background: #ffffff1a; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+  .prog i { display: block; height: 100%; background: var(--flame); }
+  #startGate { position: fixed; inset: 0; z-index: 300; background: #000c; display: none; place-items: center; }
+  #startGate.on { display: grid; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<header class="top">
+  <div class="brand" id="brandBox"><b id="venue">Karaoke-PC-F</b><small>KARAOKE SYSTEM</small></div>
+  <div class="grow">
+    <span class="lbl">Sedang diputar</span>
+    <div class="np-title ell" id="npTitle">—</div>
+    <div class="bar"><i id="npBar"></i></div>
+  </div>
+  <div class="grow">
+    <span class="lbl" style="color:var(--yellow)">Berikutnya</span>
+    <div class="ell muted" id="upNext" style="margin-top:4px;font-size:14px">—</div>
+  </div>
+  <div class="qrbox">
+    <img id="qr" alt="">
+    <div><span class="lbl">Request dari HP</span><div class="u" id="qrUrl"></div><div class="u">Room <b id="roomName" style="color:#fff"></b> · Kode <b id="code" style="color:var(--yellow)"></b></div></div>
+  </div>
+  <div class="clock"><b id="clock">--:--</b><span id="left"></span></div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="home" class="on">Beranda</button>
+  <button data-tab="search">Cari</button>
+  <button data-tab="hits">Lagu Hits</button>
+  <button data-tab="artists">Artis</button>
+  <button data-tab="queue">Antrian (<span id="qn">0</span>)</button>
+  <button data-tab="sung">Sudah Dinyanyikan</button>
+  <button data-tab="party">Party</button>
+  <button data-tab="youtube">YouTube</button>
+  <button data-tab="order">Pesan &amp; Panggil</button>
+  <button data-tab="settings">Pengaturan</button>
+  <span class="sp"></span>
+  <button id="btnFull">⛶ MV Layar Penuh</button>
+</nav>
+
+<main>
+  <section class="tab on" id="tab-home">
+    <div class="homeleft">
+      <div id="stageHome">
+        <div id="stage">
+          <video id="v" playsinline preload="auto"></video>
+          <canvas id="viz"></canvas>
+          <div class="audio-title"><div><b id="aTitle"></b><div class="muted" id="aArtist" style="font-size:clamp(14px,2vw,30px)"></div></div></div>
+          <div id="lights"></div>
+          <img id="stageLogo" alt="">
+          <div id="lyrics"><div class="l1" id="l1"></div><div class="l2" id="l2"></div></div>
+          <div id="danmaku"></div><div id="fx"></div>
+          <div class="full-np"><img id="qr2" alt=""><div><span class="lbl">Scan untuk request</span><div style="font-weight:800;font-size:18px" id="fnTitle"></div><div class="muted" style="font-size:13px" id="fnNext"></div></div></div>
+          <div class="full-hint">Klik / Esc untuk kembali ke menu</div>
+          <div id="introHost"></div>
+        </div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <span class="lbl">Sedang diputar</span>
+        <div style="font-weight:800;margin-top:4px" class="ell" id="npTitle2">Belum ada lagu — pilih lagu dulu</div>
+        <div class="muted ell" style="font-size:12px" id="npArtist2"></div>
+      </div>
+      <div class="upnext scroll" style="display:flex;flex-direction:column;gap:6px;min-height:0">
+        <span class="lbl" style="color:var(--yellow)">Berikutnya</span>
+        <div id="upList" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn vio" data-go="queue">Lihat semua antrian (<span id="qn2">0</span>)</button>
+      </div>
+    </div>
+    <div class="tiles">
+      <button class="tile" data-go="search" style="background:var(--t1)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Cari Lagu</button>
+      <button class="tile" data-go="artists" style="background:var(--t2)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Artis</button>
+      <button class="tile" data-go="hits" style="background:var(--t3)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-4 5-4 7-1-1-2-2-2-4-2 2-3 5-3 9 0 4 3 7 7 7z"/></svg>Lagu Hits</button>
+      <button class="tile" data-go="queue" style="background:var(--t4)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Antrian</button>
+      <button class="tile" data-go="party" style="background:var(--t5)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>Party</button>
+      <button class="tile" data-go="youtube" style="background:var(--t6)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="#fff"/></svg>YouTube</button>
+      <button class="tile" data-go="sung" style="background:var(--t7)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg>Sudah Dinyanyikan</button>
+      <button class="tile" data-go="order" style="background:var(--t8)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2v7a3 3 0 0 0 6 0V2M9 2v20M18 2c-2 0-3 2-3 5v5h3v10"/></svg>Pesan &amp; Panggil</button>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-search">
+    <div class="searchbar"><input id="q" placeholder="Ketik judul, artis, atau nomor lagu…" autocomplete="off"><button class="btn" id="qClear">Hapus</button></div>
+    <div id="qJobs"></div>
+    <div class="sec-h">💽 Di penyimpanan <span class="muted" id="qInfo"></span></div>
+    <div class="list2" id="qRes"></div>
+    <div id="ytSec"><div class="sec-h">▶️ Dari YouTube <span class="muted" id="ytState"></span></div>
+    <div class="list2" id="qYt"></div></div>
+  </section>
+  <section class="tab" id="tab-hits"><h3 class="sec">Lagu Hits</h3><div class="list2" id="hitRes"></div></section>
+  <section class="tab" id="tab-artists"><h3 class="sec">Artis</h3><input id="aq" placeholder="Cari artis…" style="margin-bottom:14px;max-width:420px"><div class="chips" id="artRes"></div></section>
+  <section class="tab" id="tab-queue">
+    <div class="row" style="margin-bottom:12px"><h3 class="sec grow" style="margin:0">Antrian Lagu</h3><button class="btn red sm" id="qClearAll">Kosongkan antrian</button></div>
+    <div id="queueList" style="display:flex;flex-direction:column;gap:8px;max-width:900px"></div>
+  </section>
+  <section class="tab" id="tab-sung"><h3 class="sec">Sudah Dinyanyikan</h3><div class="list2" id="sungList"></div></section>
+  <section class="tab" id="tab-party">
+    <h3 class="sec">Party</h3>
+    <span class="lbl">Pesan terbang di layar</span>
+    <div class="searchbar" style="margin-top:8px"><input id="msg" maxlength="80" placeholder="Tulis sesuatu…"><button class="btn pri" id="msgSend">Kirim</button></div>
+    <span class="lbl">Semangati penyanyi</span>
+    <div class="bigbtns" style="grid-template-columns:repeat(8,1fr);margin-top:8px" id="cheerBtns"></div>
+    <span class="lbl">Suara penonton</span>
+    <div class="bigbtns" style="margin-top:8px">
+      <button class="btn" data-sound="applause">👏 Tepuk Tangan</button><button class="btn" data-sound="cheer">🙌 Sorakan</button>
+      <button class="btn" data-sound="horn">📯 Terompet</button><button class="btn" data-sound="drum">🥁 Drum Roll</button>
+    </div>
+    <span class="lbl">Suasana lampu layar</span>
+    <div class="bigbtns" style="grid-template-columns:repeat(5,1fr);margin-top:8px">
+      <button class="btn" data-light="usual">✨ Normal</button><button class="btn" data-light="birthday">🎂 Ulang Tahun</button>
+      <button class="btn" data-light="romantic">🌹 Romantis</button><button class="btn" data-light="party">🪩 Party</button><button class="btn" data-light="chill">🌙 Santai</button>
+    </div>
+  </section>
+  <section class="tab" id="tab-youtube">
+    <h3 class="sec">Download dari YouTube</h3>
+    <div class="muted" style="font-size:13px;margin-bottom:12px">Lagu yang didownload tersimpan di hardisk server dan otomatis masuk antrian room ini.</div>
+    <div class="searchbar"><input id="ytq" placeholder="Judul lagu atau tempel link YouTube…"><button class="btn pri" id="ytGo">Cari</button></div>
+    <div id="ytJobs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+    <div class="list2" id="ytRes"></div>
+  </section>
+  <section class="tab" id="tab-order">
+    <div class="row" style="margin-bottom:14px"><h3 class="sec grow" style="margin:0">Pesan Makanan &amp; Minuman</h3><button class="btn red" id="callStaff">🔔 Panggil Staf</button></div>
+    <div class="list2" id="menuList"></div>
+    <h3 class="sec" style="margin-top:22px">Pesanan Room Ini</h3>
+    <div id="orderList" style="display:flex;flex-direction:column;gap:6px;max-width:700px"></div>
+  </section>
+  <section class="tab" id="tab-settings">
+    <h3 class="sec">Pengaturan Layar</h3>
+    <div class="card" style="padding:18px;max-width:640px;display:flex;flex-direction:column;gap:14px">
+      <label class="row"><input type="checkbox" id="setAutoFull" style="width:auto"> <span>Otomatis layar penuh saat lagu mulai (setelah 12 detik tanpa sentuhan)</span></label>
+      <label class="row"><input type="checkbox" id="setIntro" style="width:auto"> <span>Tampilkan judul lagu di awal (intro)</span></label>
+      <div class="field"><label>Mode "Vocal Cut" default</label>
+        <select id="setVocal"><option value="orig">Original (stereo)</option><option value="cut">Vocal Cut (hapus vokal tengah)</option><option value="left">Channel Kiri</option><option value="right">Channel Kanan</option></select></div>
+      <div class="muted" style="font-size:12px">Tips: file karaoke VCD/DVD lama biasanya vokal ada di satu channel — pilih Kiri atau Kanan untuk musik saja. Untuk lagu biasa (stereo), pakai Vocal Cut.</div>
+      <div class="muted" style="font-size:12px">Pintasan keyboard: Spasi = pause · N = lagu berikut · R = ulang · F = layar penuh · L = lirik · ↑/↓ = volume · C = vocal cut</div>
+    </div>
+  </section>
+</main>
+
+<div id="ticker"><span class="tk" id="tickerText"></span></div>
+<footer class="ctl">
+  <div class="grp"><span class="lbl">Vokal</span><div class="row">
+    <button class="btn sm" data-vocal="orig">Original</button><button class="btn sm" data-vocal="cut">Vocal Cut</button>
+    <button class="btn sm" data-vocal="left">Ch Kiri</button><button class="btn sm" data-vocal="right">Ch Kanan</button></div></div>
+  <div class="grp"><span class="lbl">Playback</span><div class="row">
+    <button class="btn sm" id="bReplay" title="Ulang">⟲ Ulang</button><button class="btn sm pri" id="bPlay" title="Play/Pause">⏯</button><button class="btn sm" id="bSkip" title="Lagu berikut">⏭ Skip</button></div></div>
+  <div class="grp"><span class="lbl">Lirik</span><div class="row">
+    <button class="btn sm" id="bLyrE" title="Lirik lebih cepat">−</button><button class="btn sm on" id="bLyr">Lirik</button><button class="btn sm" id="bLyrL" title="Lirik lebih lambat">+</button></div></div>
+  <div class="grp"><span class="lbl">Tempo</span><div class="row">
+    <button class="btn sm" id="bTmpD">−</button><span class="val" id="tmpV">100%</span><button class="btn sm" id="bTmpU">+</button></div></div>
+  <div class="grp"><span class="lbl">Musik</span><div class="row">
+    <button class="btn sm" id="bVolD">−</button><span class="val" id="volV">80</span><button class="btn sm" id="bVolU">+</button></div></div>
+  <div class="grp"><span class="lbl">Penonton</span><div class="row">
+    <button class="btn sm yel" data-sound="applause">Tepuk</button><button class="btn sm yel" data-sound="cheer">Sorak</button>
+    <button class="btn sm" data-sound="horn">📯</button><button class="btn sm" data-sound="drum">🥁</button></div></div>
+  <div class="grp"><span class="lbl">Lampu</span><div class="row"><button class="btn sm vio" id="bLight">Normal</button></div></div>
+</footer>
+
+<div class="overlay" id="closedOv"><div><img id="closedLogo" alt=""><div class="brand" id="closedBrand"><b id="venue2" style="font-size:60px">Karaoke-PC-F</b><small style="font-size:14px">KARAOKE SYSTEM</small></div><h1 id="closedRoom"></h1><div class="muted" style="font-size:22px">Room ini sedang tutup</div><div style="font-size:60px;margin-top:30px;font-weight:200" id="clock2"></div></div></div>
+<div class="overlay" id="timeupOv" style="background:#000e"><div><h1>⏰ Waktu habis</h1><div class="muted" style="font-size:22px">Terima kasih! Silakan hubungi kasir untuk tambah waktu atau pembayaran.</div></div></div>
+<div id="announce"></div>
+<div id="startGate"><button class="btn pri" style="font-size:24px;padding:22px 40px" id="startBtn">▶ Klik untuk mulai audio</button></div>
+
+<script src="/static/common.js"></script>
+<script>
+const roomId = location.pathname.split('/')[2];
+const pk = new URLSearchParams(location.search).get('pk') || '';
+const P = (sub = '') => `/api/player/${encodeURIComponent(roomId)}${sub ? '/' + sub : ''}?pk=${encodeURIComponent(pk)}`;
+const papi = (sub, body) => api(P(sub), body);
+const v = $('#v'), stage = $('#stage');
+const CHEERS = ['❤️', '🔥', '👏', '🎉', '🌹', '😍', '💯', '🎤'];
+const LIGHTS = ['usual', 'birthday', 'romantic', 'party', 'chill'];
+const LIGHT_NAME = { usual: 'Normal', birthday: 'Ulang Tahun', romantic: 'Romantis', party: 'Party', chill: 'Santai' };
+const cfg = Object.assign({ autoFull: true, intro: true, vocalDefault: 'cut', vol: 0.8 }, store.get('playerCfg', {}));
+const saveCfg = () => store.set('playerCfg', cfg);
+
+let state = null, curQid = null, lyrics = [], lyrOffset = 0, lyrOn = true, vocal = 'orig', tempo = 1, light = 'usual';
+let idleT = Date.now();
+
+// ---------- audio graph ----------
+let ctx, srcNode, gains, master, analyser;
+function ensureAudio() {
+  if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  srcNode = ctx.createMediaElementSource(v);
+  const split = ctx.createChannelSplitter(2), merge = ctx.createChannelMerger(2);
+  srcNode.connect(split);
+  gains = [[0, 0], [0, 0]].map((row, i) => row.map((_, o) => { const g = ctx.createGain(); split.connect(g, i); g.connect(merge, 0, o); return g; }));
+  master = ctx.createGain(); analyser = ctx.createAnalyser(); analyser.fftSize = 256;
+  merge.connect(master); master.connect(analyser); analyser.connect(ctx.destination);
+  applyVocal(); applyVol();
+}
+function applyVocal() {
+  $$('[data-vocal]').forEach((b) => b.classList.toggle('on', b.dataset.vocal === vocal));
+  if (!gains) return;
+  const M = { orig: [[1, 0], [0, 1]], left: [[1, 1], [0, 0]], right: [[0, 0], [1, 1]], cut: [[.8, .8], [-.8, -.8]] }[vocal];
+  for (let i = 0; i < 2; i++) for (let o = 0; o < 2; o++) gains[i][o].gain.setTargetAtTime(M[i][o], ctx.currentTime, .03);
+}
+function applyVol() { $('#volV').textContent = Math.round(cfg.vol * 100); if (master) master.gain.setTargetAtTime(cfg.vol, ctx.currentTime, .05); else v.volume = Math.min(1, cfg.vol); }
+function setVocal(m) { vocal = m; ensureAudio(); applyVocal(); }
+
+// ---------- suara penonton (disintesis) ----------
+function noiseBuf(sec) { const b = ctx.createBuffer(1, ctx.sampleRate * sec, ctx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
+function playSound(name) {
+  ensureAudio();
+  const out = ctx.createGain(); out.gain.value = .5; out.connect(ctx.destination);
+  const t0 = ctx.currentTime;
+  if (name === 'applause' || name === 'cheer') {
+    const n = ctx.createBufferSource(); n.buffer = noiseBuf(4);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = name === 'cheer' ? 1100 : 1800; bp.Q.value = name === 'cheer' ? 1.2 : .6;
+    const env = ctx.createGain(); env.gain.value = 0;
+    if (name === 'applause') {
+      for (let t = 0; t < 3.4; t += 0.025 + Math.random() * 0.03) { const k = t0 + t; env.gain.setValueAtTime(0.25 + Math.random() * 0.6 * (1 - t / 4), k); env.gain.setTargetAtTime(0.05, k + 0.005, 0.012); }
+      env.gain.setTargetAtTime(0, t0 + 3.4, 0.2);
+    } else {
+      env.gain.setTargetAtTime(0.9, t0, 0.15); env.gain.setTargetAtTime(0, t0 + 2.6, 0.4);
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 5; const lg = ctx.createGain(); lg.gain.value = 300; lfo.connect(lg); lg.connect(bp.frequency); lfo.start(); lfo.stop(t0 + 4);
+    }
+    n.connect(bp); bp.connect(env); env.connect(out); n.start(); n.stop(t0 + 4);
+  } else if (name === 'horn') {
+    [0, 0.35, 0.7].forEach((d, k) => [233, 294, 349].forEach((f) => {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f * (k === 2 ? 1.5 : 1);
+      const g = ctx.createGain(); g.gain.value = 0; g.gain.setTargetAtTime(.12, t0 + d, .02); g.gain.setTargetAtTime(0, t0 + d + (k === 2 ? .9 : .25), .05);
+      const lp = ctx.createBiquadFilter(); lp.frequency.value = 2200; o.connect(lp); lp.connect(g); g.connect(out); o.start(t0 + d); o.stop(t0 + d + 1.5);
+    }));
+  } else if (name === 'drum') {
+    const n = ctx.createBufferSource(); n.buffer = noiseBuf(3.5);
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+    const env = ctx.createGain(); env.gain.value = 0;
+    for (let t = 0; t < 2.2; t += 0.045) { env.gain.setValueAtTime(0.15 + t * 0.25, t0 + t); env.gain.setTargetAtTime(0.02, t0 + t + 0.004, 0.012); }
+    env.gain.setValueAtTime(1, t0 + 2.3); env.gain.setTargetAtTime(0, t0 + 2.35, 0.35);
+    n.connect(hp); hp.connect(env); env.connect(out); n.start(); n.stop(t0 + 3.5);
+    const k = ctx.createOscillator(); k.frequency.setValueAtTime(120, t0 + 2.3); k.frequency.exponentialRampToValueAtTime(40, t0 + 2.6);
+    const kg = ctx.createGain(); kg.gain.setValueAtTime(0, t0); kg.gain.setValueAtTime(.8, t0 + 2.3); kg.gain.setTargetAtTime(0, t0 + 2.32, .12);
+    k.connect(kg); kg.connect(out); k.start(); k.stop(t0 + 3);
+  }
+}
+
+// ---------- efek layar ----------
+function danmaku(text, by) {
+  const el = document.createElement('div'); el.className = 'dm';
+  el.innerHTML = (by ? `<small>${esc(by)}</small>` : '') + esc(text);
+  el.style.top = (5 + Math.random() * 60) + '%';
+  el.style.animationDuration = (7 + Math.random() * 3) + 's';
+  $('#danmaku').appendChild(el); setTimeout(() => el.remove(), 11000);
+}
+function cheer(i) {
+  for (let k = 0; k < 10; k++) setTimeout(() => {
+    const e = document.createElement('div'); e.className = 'fxe'; e.textContent = CHEERS[i] || '❤️';
+    e.style.left = (5 + Math.random() * 88) + '%'; e.style.setProperty('--r', (Math.random() * 60 - 30) + 'deg');
+    $('#fx').appendChild(e); setTimeout(() => e.remove(), 3400);
+  }, k * 110);
+}
+function setLight(m) {
+  light = m; const el = $('#lights'); el.className = m === 'usual' ? '' : 'on ' + m;
+  $('#bLight').textContent = LIGHT_NAME[m];
+}
+function announce(text) { const a = $('#announce'); a.textContent = '📢 ' + text; a.classList.add('on'); setTimeout(() => a.classList.remove('on'), 9000); }
+
+// ---------- visualizer untuk lagu audio ----------
+const cv = $('#viz'), c2 = cv.getContext('2d');
+function drawViz() {
+  requestAnimationFrame(drawViz);
+  if (!stage.classList.contains('audio') || !analyser) return;
+  const w = cv.width = cv.clientWidth, h = cv.height = cv.clientHeight;
+  const d = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(d);
+  const g = c2.createLinearGradient(0, h, 0, 0); const cs = getComputedStyle(document.documentElement); g.addColorStop(0, cs.getPropertyValue('--pink').trim() || '#ff3d8b'); g.addColorStop(1, cs.getPropertyValue('--cyan').trim() || '#38d6f5');
+  c2.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg0').trim() || '#0a0418'; c2.fillRect(0, 0, w, h); c2.fillStyle = g;
+  const n = 64, bw = w / n;
+  for (let i = 0; i < n; i++) { const val = d[i] / 255; c2.fillRect(i * bw + 2, h - val * h * .8, bw - 4, val * h * .8); }
+}
+drawViz();
+
+// ---------- pemutaran ----------
+function loadSong(now) {
+  curQid = now ? now.qid : null;
+  lyrics = []; $('#l1').textContent = ''; $('#l2').textContent = '';
+  if (!now) { v.removeAttribute('src'); v.load(); stage.classList.remove('audio'); return; }
+  stage.classList.toggle('audio', now.type === 'audio');
+  $('#aTitle').textContent = now.title; $('#aArtist').textContent = now.artist || '';
+  v.src = `/media/${now.id}?pk=${encodeURIComponent(pk)}`;
+  v.playbackRate = tempo; v.preservesPitch = true;
+  vocal = 'orig'; applyVocal();
+  play();
+  if (now.hasLyrics) fetch(`/lyrics/${now.id}`).then((r) => r.text()).then((t) => { if (curQid === now.qid) lyrics = parseLRC(t); });
+  if (cfg.intro) {
+    $('#introHost').innerHTML = `<div class="intro"><div><span>${esc(now.by ? 'Penyanyi: ' + now.by : 'Selamat bernyanyi')}</span><b>${esc(now.title)}</b><span class="muted">${esc(now.artist || '')}</span></div></div>`;
+  }
+  idleT = Date.now();
+}
+function play() {
+  ensureAudio();
+  const p = v.play();
+  if (p) p.catch(() => $('#startGate').classList.add('on'));
+}
+$('#startBtn').onclick = () => { $('#startGate').classList.remove('on'); ensureAudio(); play(); };
+v.addEventListener('ended', () => papi('ended', { qid: curQid }).catch(() => {}));
+v.addEventListener('error', () => {
+  if (!v.getAttribute('src')) return;
+  toast('File lagu tidak bisa diputar (format/codec tidak didukung). Lanjut ke lagu berikutnya…', 5000);
+  setTimeout(() => papi('ended', { qid: curQid }).catch(() => {}), 2500);
+});
+v.addEventListener('timeupdate', () => {
+  const pct = v.duration ? (v.currentTime / v.duration) * 100 : 0; $('#npBar').style.width = pct + '%';
+  if (!lyrics.length || !lyrOn) { $('#l1').textContent = ''; $('#l2').textContent = ''; return; }
+  const t = v.currentTime + lyrOffset;
+  let i = -1; for (let k = 0; k < lyrics.length; k++) { if (lyrics[k].t <= t) i = k; else break; }
+  $('#l1').textContent = i >= 0 ? lyrics[i].text : ''; $('#l2').textContent = lyrics[i + 1] ? lyrics[i + 1].text : '';
+});
+
+function control(a) {
+  if (a === 'pause') v.pause(); else if (a === 'play') play();
+  else if (a === 'toggle') v.paused ? play() : v.pause();
+  else if (a === 'replay') { v.currentTime = 0; play(); }
+  else if (a.startsWith('vocal:')) { const m = a.slice(6); setVocal(m === 'inst' ? cfg.vocalDefault : m === 'cycle' ? ['orig', 'cut', 'left', 'right'][(['orig', 'cut', 'left', 'right'].indexOf(vocal) + 1) % 4] : m); }
+  else if (a.startsWith('lyrics:')) { const m = a.slice(7); if (m === 'on') lyrOn = true; else if (m === 'off') lyrOn = false; else if (m === 'toggle') lyrOn = !lyrOn; else if (m === 'earlier') lyrOffset += .5; else if (m === 'later') lyrOffset -= .5; else lyrOffset = 0; $('#bLyr').classList.toggle('on', lyrOn); if (m === 'earlier' || m === 'later') toast('Lirik ' + (lyrOffset >= 0 ? '+' : '') + lyrOffset.toFixed(1) + ' dtk', 1200); }
+  else if (a.startsWith('tempo:')) { const m = a.slice(6); tempo = m === 'reset' ? 1 : Math.min(1.25, Math.max(.75, +(tempo + (m === 'up' ? .05 : -.05)).toFixed(2))); v.playbackRate = tempo; $('#tmpV').textContent = Math.round(tempo * 100) + '%'; }
+  else if (a.startsWith('vol:')) { cfg.vol = Math.min(1.5, Math.max(0, +(cfg.vol + (a === 'vol:up' ? .1 : -.1)).toFixed(2))); saveCfg(); applyVol(); }
+  else if (a.startsWith('cheer:')) cheer(+a.slice(6));
+  else if (a.startsWith('sound:')) playSound(a.slice(6));
+  else if (a.startsWith('lights:')) setLight(a.slice(7));
+  else if (a === 'fullscreen') setFull(!stage.classList.contains('full'));
+}
+const send = (action) => papi('control', { action }).catch((e) => toast(e.message));
+
+// ---------- render ----------
+let lastCode = '';
+function render() {
+  const r = state.room, s = r.session;
+  if ($('#venue')) $('#venue').textContent = state.venue;
+  $('#venue2').textContent = state.venue;
+  document.body.classList.toggle('closed', !r.active);
+  $('#roomName').textContent = r.name; $('#closedRoom').textContent = 'Room ' + r.name;
+  document.title = state.venue + ' — Room ' + r.name;
+  $('#closedOv').classList.toggle('on', !r.active);
+  $('#timeupOv').classList.toggle('on', !!(s && s.timeup));
+  if (!r.active) { if (curQid || v.getAttribute('src')) loadSong(null); setFull(false); return; }
+  if (s.code !== lastCode) {
+    lastCode = s.code;
+    const qrSrc = '/api/qr?text=' + encodeURIComponent(state.guestUrl);
+    $('#qr').src = qrSrc; $('#qr2').src = qrSrc;
+    $('#qrUrl').textContent = state.guestUrl.replace(/^https?:\/\//, '');
+    $('#code').textContent = s.code;
+  }
+  const now = s.now;
+  if ((now ? now.qid : null) !== curQid) loadSong(now);
+  $('#npTitle').innerHTML = now ? songLine(now) : 'Belum ada lagu';
+  $('#npTitle2').textContent = now ? now.title : 'Belum ada lagu — pilih lagu dulu';
+  $('#npArtist2').textContent = now ? [now.artist, now.by && 'oleh ' + now.by].filter(Boolean).join(' · ') : '';
+  $('#upNext').innerHTML = s.queue[0] ? songLine(s.queue[0]) : '—';
+  $('#fnTitle').textContent = now ? now.title : ''; $('#fnNext').textContent = s.queue[0] ? 'Berikutnya: ' + s.queue[0].title : '';
+  $('#qn').textContent = $('#qn2').textContent = s.queue.length;
+  $('#upList').innerHTML = s.queue.slice(0, 3).map((q) => `<div class="song-row"><div class="grow ell">${songLine(q)}</div>${q.by ? `<span class="tag pink">${esc(q.by)}</span>` : ''}</div>`).join('') || '<div class="muted" style="font-size:13px">Antrian kosong</div>';
+  $('#queueList').innerHTML = s.queue.map((q, i) => `<div class="song-row">${coverHTML(q, 54)}<div class="grow"><div class="t ell">${i + 1}. ${esc(q.title)}</div><div class="a">${esc(q.artist || q.folder)} ${q.by ? `<span class="tag pink">${esc(q.by)}</span>` : ''}</div></div>
+    <button class="btn sm vio" data-top="${q.qid}" ${i === 0 ? 'disabled' : ''}>Naikkan</button><button class="btn sm red" data-rm="${q.qid}">Hapus</button></div>`).join('') || '<div class="empty">Antrian kosong. Cari lagu lalu tekan Tambah.</div>';
+  $('#sungList').innerHTML = s.played.map((q) => songCard(q)).join('') || '<div class="empty">Belum ada lagu yang dinyanyikan.</div>';
+  $('#menuList').innerHTML = (state.menu || []).map((m) => `<div class="song-row"><div class="grow"><div class="t">${esc(m.name)}</div><div class="a">${esc(m.cat)} · ${rupiah(m.price, state.currency)}</div></div><button class="btn sm pri" data-order="${m.id}">+ Pesan</button></div>`).join('');
+  $('#orderList').innerHTML = s.orders.filter((o) => o.status !== 'batal').map((o) => `<div class="song-row"><div class="grow">${o.qty}× ${esc(o.name)}</div><span class="tag ${o.status === 'baru' ? 'pink' : ''}">${o.status === 'baru' ? 'Diproses' : 'Diantar'}</span></div>`).join('') || '<div class="muted">Belum ada pesanan.</div>';
+}
+function songCard(s) {
+  return `<div class="song-row">${coverHTML(s, 54)}<div class="grow"><div class="t ell">${esc(s.title)}</div><div class="a ell">${esc(s.artist || s.folder || '')}${s.num ? ' · #' + esc(s.num) : ''}${s.hasLyrics ? ' · <span class="tag">lirik</span>' : ''}</div></div>
+  <button class="btn sm vio" data-add="${s.id}" data-top="1">Berikutnya</button><button class="btn sm pri" data-add="${s.id}">+ Tambah</button></div>`;
+}
+
+async function loadDisplay() {
+  try {
+    const d = await api('/api/display');
+    applyTheme(d.theme);
+    const tk = $('#ticker');
+    const text = String(d.tickerText || '').split(/\n+/).map((x) => x.trim()).filter(Boolean).join('     ★     ');
+    tk.classList.toggle('on', !!(d.tickerOn && text));
+    const el = $('#tickerText');
+    if (el.textContent !== text) { el.textContent = text; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
+    const px = Math.max(20, Number(d.tickerSpeed) || 60) * 1.5;
+    requestAnimationFrame(() => { el.style.animationDuration = Math.max(8, (el.scrollWidth) / px) + 's'; });
+    const lg = $('#stageLogo'), cl = $('#closedLogo');
+    if (d.logo) {
+      $('#brandBox').innerHTML = `<img class="logo" src="${esc(d.logo)}" alt="">`;
+      lg.src = d.logo; cl.src = d.logo; lg.className = 'has ' + (d.logoPos || 'top-right'); cl.className = 'has';
+      $('#closedBrand').style.display = 'none';
+    } else {
+      $('#brandBox').innerHTML = `<b id="venue">${esc(d.venue)}</b><small>KARAOKE SYSTEM</small>`;
+      lg.className = ''; cl.className = ''; $('#closedBrand').style.display = '';
+    }
+  } catch {}
+}
+loadDisplay();
+
+let lastV = -1;
+const refresh = debounce(async () => {
+  try { state = await papi(''); render(); }
+  catch (e) { toast(e.message, 6000); }
+}, 120);
+listen((m) => {
+  if (m.v !== lastV) { lastV = m.v; refresh(); }
+  if (m.control && (m.control.room === roomId || m.control.room === '*')) {
+    const c = m.control;
+    if (c.action === 'msg') danmaku(c.text, c.by);
+    else if (c.action === 'announce') announce(c.text);
+    else control(c.action);
+  }
+  if (m.display) loadDisplay();
+  if (m.yt && ($('#tab-youtube').classList.contains('on') || $('#tab-search').classList.contains('on'))) loadJobs();
+});
+
+// ---------- tab & navigasi ----------
+function go(tab) {
+  $$('#tabs [data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  $$('section.tab').forEach((s) => s.classList.toggle('on', s.id === 'tab-' + tab));
+  if (tab === 'search') { setTimeout(() => $('#q').focus(), 50); loadJobs(); }
+  if (tab === 'hits') loadHits();
+  if (tab === 'artists') loadArtists();
+  if (tab === 'youtube') { loadJobs(); setTimeout(() => $('#ytq').focus(), 50); }
+}
+$('#tabs').onclick = (e) => { const b = e.target.closest('[data-tab]'); if (b) go(b.dataset.tab); };
+document.addEventListener('click', async (e) => {
+  idleT = Date.now();
+  const t = e.target.closest('button'); if (!t) return;
+  try {
+    if (t.dataset.go) go(t.dataset.go);
+    else if (t.dataset.add) { await papi('queue', { songId: t.dataset.add, top: !!t.dataset.top }); toast(t.dataset.top ? 'Diputar berikutnya ✔' : 'Masuk antrian ✔', 1500); }
+    else if (t.dataset.top) await papi('queue-top', { qid: t.dataset.top });
+    else if (t.dataset.rm) await papi('queue-remove', { qid: t.dataset.rm });
+    else if (t.dataset.order) { await papi('order', { itemId: t.dataset.order, qty: 1 }); toast('Pesanan dikirim ke kasir ✔'); }
+    else if (t.dataset.vocal) setVocal(t.dataset.vocal);
+    else if (t.dataset.sound) send('sound:' + t.dataset.sound);
+    else if (t.dataset.light) send('lights:' + t.dataset.light);
+    else if (t.dataset.cheer) send('cheer:' + t.dataset.cheer);
+    else if (t.dataset.yt || t.dataset.ytd) {
+      t.disabled = true;
+      const r = await papi('yt/add', { url: t.dataset.yt || t.dataset.ytd, title: t.dataset.title, by: 'Room' });
+      if (r.queued) toast('Lagu sudah tersimpan — masuk antrian ✔'); else { toast('Download dimulai ⬇ Lagu otomatis masuk antrian setelah selesai.'); t.textContent = '⏳ Sedang didownload'; }
+      loadJobs();
+    }
+  } catch (err) { toast(err.message); }
+});
+$('#cheerBtns').innerHTML = CHEERS.map((c, i) => `<button class="btn emo" data-cheer="${i}">${c}</button>`).join('');
+$('#bReplay').onclick = () => control('replay');
+$('#bPlay').onclick = () => control('toggle');
+$('#bSkip').onclick = () => papi('skip').catch((e) => toast(e.message));
+$('#bLyr').onclick = () => control('lyrics:toggle');
+$('#bLyrE').onclick = () => control('lyrics:earlier');
+$('#bLyrL').onclick = () => control('lyrics:later');
+$('#bTmpD').onclick = () => control('tempo:down'); $('#bTmpU').onclick = () => control('tempo:up');
+$('#bVolD').onclick = () => control('vol:down'); $('#bVolU').onclick = () => control('vol:up');
+$('#bLight').onclick = () => send('lights:' + LIGHTS[(LIGHTS.indexOf(light) + 1) % LIGHTS.length]);
+$('#qClearAll').onclick = () => { if (confirm('Kosongkan semua antrian?')) papi('queue-clear').catch((e) => toast(e.message)); };
+$('#msgSend').onclick = () => { const t = $('#msg').value.trim(); if (t) { papi('message', { text: t }); $('#msg').value = ''; } };
+$('#msg').onkeydown = (e) => { if (e.key === 'Enter') $('#msgSend').click(); };
+$('#callStaff').onclick = () => papi('call').then(() => toast('Staf sudah dipanggil 🔔')).catch((e) => toast(e.message));
+
+// cari
+let ytSeq = 0;
+const doSearch = debounce(async () => {
+  const q = $('#q').value.trim();
+  const r = await api('/api/songs?limit=120&q=' + encodeURIComponent(q));
+  $('#qInfo').textContent = q ? `${r.total} lagu ditemukan` : `${r.total} lagu`;
+  $('#qRes').innerHTML = r.items.map(songCard).join('') || `<div class="empty">Tidak ada di penyimpanan — lihat hasil YouTube di bawah.</div>`;
+}, 200);
+const doYt = debounce(async () => {
+  const q = $('#q').value.trim(), my = ++ytSeq;
+  if (state && state.youtube === false) { $('#ytSec').style.display = 'none'; return; }
+  $('#ytSec').style.display = '';
+  if (q.length < 3 || /^\d+$/.test(q)) { $('#qYt').innerHTML = ''; $('#ytState').textContent = 'ketik minimal 3 huruf'; return; }
+  $('#ytState').innerHTML = '<span class="spin"></span> mencari…';
+  try {
+    const r = await papi('yt/search', { q });
+    if (my !== ytSeq) return;
+    $('#ytState').textContent = r.items.length + ' hasil';
+    $('#qYt').innerHTML = r.items.map(ytCardHTML).join('') || '<div class="empty">Tidak ada hasil</div>';
+  } catch (e) {
+    if (my !== ytSeq) return;
+    if (e.status === 403) { $('#ytSec').style.display = 'none'; return; }
+    $('#ytState').textContent = ''; $('#qYt').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}, 800);
+$('#q').oninput = () => { doSearch(); doYt(); }; $('#qClear').onclick = () => { $('#q').value = ''; doSearch(); doYt(); $('#q').focus(); };
+doSearch();
+async function loadHits() {
+  const r = await api('/api/songs?sort=popular&limit=60');
+  $('#hitRes').innerHTML = r.items.map(songCard).join('') || '<div class="empty">Belum ada data.</div>';
+}
+let artists = [];
+async function loadArtists() { if (!artists.length) artists = (await api('/api/artists')).items; drawArtists(); }
+function drawArtists() {
+  const q = $('#aq').value.toLowerCase();
+  $('#artRes').innerHTML = artists.filter((a) => a.name.toLowerCase().includes(q)).slice(0, 400).map((a) => `<button class="chip" data-artist="${esc(a.name)}">${esc(a.name)}<small>${a.count}</small></button>`).join('') || '<div class="empty">Belum ada artis.</div>';
+}
+$('#aq').oninput = drawArtists;
+$('#artRes').onclick = (e) => { const b = e.target.closest('[data-artist]'); if (b) { $('#q').value = b.dataset.artist; go('search'); doSearch(); } };
+
+// youtube
+async function ytSearch() {
+  const q = $('#ytq').value.trim(); if (!q) return;
+  if (/youtu\.?be/.test(q)) { try { await papi('yt/add', { url: q, by: 'Room' }); toast('Download dimulai ✔'); $('#ytq').value = ''; loadJobs(); } catch (e) { toast(e.message); } return; }
+  $('#ytRes').innerHTML = '<div class="empty">Mencari di YouTube…</div>';
+  try {
+    const r = await papi('yt/search', { q });
+    $('#ytRes').innerHTML = r.items.map(ytCardHTML).join('') || '<div class="empty">Tidak ada hasil.</div>';
+  } catch (e) { $('#ytRes').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+$('#ytGo').onclick = ytSearch; $('#ytq').onkeydown = (e) => { if (e.key === 'Enter') ytSearch(); };
+async function loadJobs() {
+  try {
+    const st = await papi('yt/status');
+    $('#qJobs').innerHTML = jobsHTML(st.jobs.filter((j) => j.roomId === roomId));
+    $('#ytJobs').innerHTML = (st.ytdlp ? '' : '<div class="card" style="padding:12px">⚠️ Fitur download belum disiapkan di komputer kasir (yt-dlp). Minta staf aktifkan di Desk → YouTube.</div>') +
+      st.jobs.filter((j) => j.roomId === roomId).slice(0, 5).map((j) => `<div class="card" style="padding:10px 12px"><div class="row"><div class="grow ell">${esc(j.title)}</div><span class="tag">${esc(j.status)}${j.status === 'download' ? ' ' + Math.round(j.progress) + '%' : ''}</span></div>${j.status === 'download' ? `<div class="prog"><i style="width:${j.progress}%"></i></div>` : ''}${j.error ? `<div class="muted" style="font-size:12px">${esc(j.error)}</div>` : ''}</div>`).join('');
+  } catch (e) { $('#ytJobs').innerHTML = `<div class="card" style="padding:12px">${esc(e.message)}</div>`; }
+}
+
+// layar penuh
+function setFull(on) {
+  stage.classList.toggle('full', on);
+  document.body.classList.toggle('isfull', on);
+  if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+}
+$('#btnFull').onclick = () => setFull(true);
+stage.addEventListener('click', () => { if (stage.classList.contains('full')) setFull(false); });
+['mousemove', 'keydown', 'touchstart', 'wheel'].forEach((ev) => document.addEventListener(ev, () => { idleT = Date.now(); }, { passive: true }));
+setInterval(() => {
+  if (cfg.autoFull && curQid && !v.paused && !stage.classList.contains('full') && Date.now() - idleT > 12000) setFull(true);
+}, 1000);
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input,textarea,select')) { if (e.key === 'Escape') e.target.blur(); return; }
+  const k = e.key.toLowerCase();
+  if (k === 'escape') setFull(false);
+  else if (k === ' ') { e.preventDefault(); control('toggle'); }
+  else if (k === 'n') papi('skip');
+  else if (k === 'r') control('replay');
+  else if (k === 'f') setFull(!stage.classList.contains('full'));
+  else if (k === 'l') control('lyrics:toggle');
+  else if (k === 'c') setVocal(vocal === 'orig' ? cfg.vocalDefault : 'orig');
+  else if (k === 'arrowup') control('vol:up');
+  else if (k === 'arrowdown') control('vol:down');
+});
+
+// pengaturan
+$('#setAutoFull').checked = cfg.autoFull; $('#setIntro').checked = cfg.intro; $('#setVocal').value = cfg.vocalDefault;
+$('#setAutoFull').onchange = (e) => { cfg.autoFull = e.target.checked; saveCfg(); };
+$('#setIntro').onchange = (e) => { cfg.intro = e.target.checked; saveCfg(); };
+$('#setVocal').onchange = (e) => { cfg.vocalDefault = e.target.value; saveCfg(); };
+applyVol(); applyVocal();
+
+// jam & sisa waktu
+setInterval(() => {
+  const t = hhmm(Date.now()); $('#clock').textContent = t; $('#clock2').textContent = t;
+  const s = state && state.room.session;
+  $('#left').textContent = s ? (s.endsAt ? 'Sisa ' + dur(s.endsAt - Date.now()) : 'Tanpa batas waktu') : '';
+}, 1000);
+</script>
+</body>
+</html>
