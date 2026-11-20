@@ -24,7 +24,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Karaoke-PC-F-Setup
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/latest.yml
       - name: Baca versi
         id: ver
         shell: bash
@@ -36,7 +38,10 @@ jobs:
           name: Karaoke-PC-F v${{ steps.ver.outputs.v }}
           target_commitish: ${{ github.sha }}
           make_latest: true
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
           body: |
             Installer Windows Karaoke-PC-F. Download file .exe di bawah, jalankan, lalu pilih mode:
             - Komputer Kasir / Server (Desk)

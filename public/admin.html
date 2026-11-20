@@ -201,6 +201,7 @@
   <span class="lbl">Panggilan</span>
   <div class="calls" id="calls"><span class="muted">Tidak ada panggilan</span></div>
   <span class="muted" id="netFoot"></span>
+  <button class="btn sm" id="verBtn" style="display:none"></button>
 </footer>
 
 <div id="pinGate"><div class="card" style="padding:26px;width:320px;display:flex;flex-direction:column;gap:12px"><div class="brand"><b>Karaoke-PC-F</b><small>STAFF DESK</small></div><input id="pinIn" type="password" placeholder="PIN admin"><button class="btn pri" id="pinOk">Masuk</button></div></div>
@@ -586,6 +587,18 @@ $('#sSave').onclick = async () => {
 };
 $('#resetPk').onclick = () => { if (confirm('Semua layar room harus dibuka ulang dengan link baru. Lanjut?')) api('/api/settings/reset-player-key', {}); };
 
+// versi & update (hanya di aplikasi desktop)
+if (bridge && bridge.appInfo) {
+  const vb = $('#verBtn');
+  const show = (info) => {
+    vb.style.display = '';
+    if (info.readyVersion) { vb.textContent = '⬆ Update v' + info.readyVersion + ' siap — pasang'; vb.className = 'btn sm pri'; }
+    else { vb.textContent = 'v' + info.version + ' · Cek update'; vb.className = 'btn sm'; }
+  };
+  bridge.appInfo().then(show).catch(() => {});
+  if (bridge.onUpdateReady) bridge.onUpdateReady((v) => { bridge.appInfo().then(show); toast('⬆ Update v' + v + ' siap dipasang', 8000); });
+  vb.onclick = () => bridge.checkUpdate();
+}
 load();
 </script>
 </body>

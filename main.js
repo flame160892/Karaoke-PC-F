@@ -12,7 +12,48 @@ const cfgFile = () => path.join(app.getPath('userData'), 'config.json');
 const readCfg = () => { try { return JSON.parse(fs.readFileSync(cfgFile(), 'utf8')); } catch { return {}; } };
 const writeCfg = (c) => fs.writeFileSync(cfgFile(), JSON.stringify(c, null, 1));
 
-let server = null, port = 0, mainWin = null;
+let server = null, port = 0, mainWin = null, appMode = '', updating = false, manualCheck = false, readyVersion = '';
+let autoUpdater = null;
+try { ({ autoUpdater } = require('electron-updater')); } catch { autoUpdater = null; }
+
+// ---------- update otomatis dari GitHub Releases ----------
+function setupUpdates() {
+  if (!autoUpdater || !app.isPackaged) return;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // mode room: terpasang saat aplikasi/PC ditutup
+  autoUpdater.on('update-available', (info) => { if (manualCheck) dialog.showMessageBox({ type: 'info', message: `Versi ${info.version} tersedia`, detail: 'Sedang didownload di belakang layar. Anda akan diberi tahu saat siap dipasang.' }); manualCheck = false; });
+  autoUpdater.on('update-not-available', () => { if (manualCheck) dialog.showMessageBox({ type: 'info', message: 'Aplikasi sudah versi terbaru', detail: 'Versi ' + app.getVersion() }); manualCheck = false; });
+  autoUpdater.on('error', (e) => { if (manualCheck) dialog.showMessageBox({ type: 'warning', message: 'Gagal cek update', detail: 'Periksa koneksi internet.\n\n' + (e && e.message ? e.message.split('\n')[0] : '') }); manualCheck = false; });
+  autoUpdater.on('update-downloaded', (info) => {
+    readyVersion = info.version;
+    if (appMode !== 'desk' || !mainWin) return; // layar room: jangan ganggu tamu, pasang saat ditutup
+    mainWin.webContents.send('update-ready', info.version);
+    promptInstall();
+  });
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  setTimeout(check, 8000);
+  setInterval(check, 6 * 3600 * 1000);
+}
+async function promptInstall() {
+  if (!readyVersion) return;
+  const r = await dialog.showMessageBox(mainWin, {
+    type: 'info', buttons: ['Pasang sekarang', 'Nanti'], defaultId: 0, cancelId: 1, title: 'Update tersedia',
+    message: `Karaoke-PC-F versi ${readyVersion} siap dipasang`,
+    detail: `Versi sekarang ${app.getVersion()}. Aplikasi akan tertutup ± 1 menit lalu terbuka lagi otomatis. Layar room tersambung kembali sendiri.\n\nPilih "Nanti" bila room sedang ramai — update akan terpasang saat aplikasi ditutup.`,
+  });
+  if (r.response === 0) installNow();
+}
+function installNow() {
+  updating = true;
+  try { server && server.flush(); } catch {}
+  setImmediate(() => autoUpdater.quitAndInstall(true, true));
+}
+function manualUpdateCheck() {
+  if (!autoUpdater || !app.isPackaged) { dialog.showMessageBox({ type: 'info', message: 'Cek update hanya tersedia di aplikasi yang sudah diinstall.' }); return; }
+  if (readyVersion) return promptInstall();
+  manualCheck = true;
+  autoUpdater.checkForUpdates().catch(() => {});
+}
 const playerWins = new Set();
 
 async function startServer() {
@@ -71,6 +112,7 @@ async function runDesk() {
     shell.openExternal(url); return { action: 'deny' };
   });
   mainWin.on('close', (e) => {
+    if (updating) return;
     const r = dialog.showMessageBoxSync(mainWin, { type: 'question', buttons: ['Tutup aplikasi', 'Batal'], defaultId: 1, title: 'Tutup', message: 'Menutup Desk akan menghentikan server lagu untuk semua room. Lanjut?' });
     if (r !== 0) e.preventDefault();
   });
@@ -88,6 +130,7 @@ function runLauncher() {
 function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'Aplikasi', submenu: [
+      { label: 'Cek update…', click: () => manualUpdateCheck() },
       { label: 'Ganti mode (Desk / Layar Room)…', click: () => { const c = readCfg(); delete c.mode; writeCfg(c); app.relaunch(); app.exit(0); } },
       { label: 'Buka folder data', click: () => shell.openPath(path.join(app.getPath('userData'), 'data')) },
       { type: 'separator' }, { role: 'reload', label: 'Muat ulang' }, { role: 'toggleDevTools', label: 'Developer tools' },
@@ -107,18 +150,22 @@ ipcMain.handle('launch', async (e, mode, url, remember) => {
   if (remember) { c.mode = mode; if (url) c.roomUrl = url; } else { delete c.mode; if (url) c.roomUrl = url; }
   writeCfg(c);
   const launcher = BrowserWindow.fromWebContents(e.sender);
+  appMode = mode;
   if (mode === 'desk') await runDesk(); else runRoom(url);
+  setupUpdates();
   launcher.close();
   return true;
 });
 ipcMain.handle('get-config', () => readCfg());
+ipcMain.handle('app-info', () => ({ version: app.getVersion(), readyVersion }));
+ipcMain.handle('check-update', () => { manualUpdateCheck(); return true; });
 
 app.on('second-instance', () => { const w = mainWin || [...playerWins][0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
 app.whenReady().then(async () => {
   buildMenu();
   const c = readCfg();
-  if (c.mode === 'desk') await runDesk();
-  else if (c.mode === 'room' && c.roomUrl) runRoom(c.roomUrl);
+  if (c.mode === 'desk') { appMode = 'desk'; await runDesk(); setupUpdates(); }
+  else if (c.mode === 'room' && c.roomUrl) { appMode = 'room'; runRoom(c.roomUrl); setupUpdates(); }
   else runLauncher();
 });
 app.on('window-all-closed', () => app.quit());

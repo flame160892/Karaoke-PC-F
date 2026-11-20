@@ -22,7 +22,7 @@ Sistem karaoke untuk Windows: **Desk kasir** (banyak room), **layar TV room**, d
 Pintasan di layar room: Spasi = pause · N = skip · R = ulang · F = layar penuh · L = lirik · C = vocal cut · F11 = layar penuh jendela.
 
 ## Build installer (.exe)
-Setiap push ke `main`, GitHub Actions membuat installer dan menerbitkannya di halaman **Releases** (naikkan `version` di package.json untuk rilis baru).
+Setiap push ke `main`, GitHub Actions membuat installer dan menerbitkannya di **Releases**. Aplikasi yang sudah terpasang mengecek Releases otomatis (saat dibuka & tiap 6 jam): di Desk muncul tawaran "Pasang sekarang"; di Layar Room update terpasang saat aplikasi/PC ditutup. Cek manual: menu Aplikasi → Cek update. Naikkan `version` di package.json untuk rilis baru.
 Atau di PC Windows: `npm install` lalu `npm run dist` (hasil di folder `dist`).
 
 Jalankan tanpa Electron (tes): `node server.js` lalu buka `http://localhost:8168`.
