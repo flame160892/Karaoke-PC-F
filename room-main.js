@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { discover, hello } = require('./lib/discover');
+const firewall = require('./lib/firewall');
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
@@ -125,6 +126,8 @@ ipcMain.handle('room:save', async (_e, c) => {
   return true;
 });
 ipcMain.handle('room:config', () => ({ ...readCfg(), version: app.getVersion(), displays: screen.getAllDisplays().map((d, i) => ({ id: d.id, label: `Layar ${i + 1} (${d.size.width}×${d.size.height})${d.id === screen.getPrimaryDisplay().id ? ' – utama' : ''}` })) }));
+ipcMain.handle('room:fw-status', () => firewall.status('Karaoke-PC-F Room', 1));
+ipcMain.handle('room:fw-fix', () => firewall.fix({ prefix: 'Karaoke-PC-F Room', exe: process.execPath }));
 ipcMain.handle('room:setup', (_e, reason) => openSetup(reason));
 ipcMain.handle('room:retry', () => { const c = readCfg(); if (c.server) openPlayer(); else openSetup(); });
 ipcMain.handle('room:quit', () => app.quit());

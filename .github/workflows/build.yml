@@ -18,6 +18,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - name: Tes tombol "Izinkan di Firewall" di Windows sungguhan
+        timeout-minutes: 3
+        run: node test/firewall-windows.js
       - name: Build aplikasi kasir (Karaoke-PC-F)
         run: npx electron-builder --win nsis --x64 --publish never
         env:

@@ -1,7 +1,7 @@
 {
   "name": "karaoke-pc-f",
   "productName": "Karaoke-PC-F",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Karaoke-PC-F: aplikasi kasir (Desk + server lagu). Layar room: Karaoke-PC-F Room.",
   "main": "main.js",
   "author": "Karaoke-PC-F",

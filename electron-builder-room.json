@@ -11,6 +11,7 @@
     "room-main.js",
     "room-preload.js",
     "lib/discover.js",
+    "lib/firewall.js",
     "public/room-setup.html",
     "public/style.css",
     "package.json"

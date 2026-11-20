@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld('roomApp', {
   retry: () => ipcRenderer.invoke('room:retry'),
   setup: (reason) => ipcRenderer.invoke('room:setup', reason),
   quit: () => ipcRenderer.invoke('room:quit'),
+  firewallStatus: () => ipcRenderer.invoke('room:fw-status'),
+  firewallFix: () => ipcRenderer.invoke('room:fw-fix'),
   onOfflineTick: (cb) => ipcRenderer.on('offline-tick', (_e, n) => cb(n)),
 });

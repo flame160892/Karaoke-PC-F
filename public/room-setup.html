@@ -47,6 +47,7 @@
     <div class="row"><button class="btn" id="rescan">🔄 Cari lagi</button><span class="muted" id="scanMsg" style="font-size:13px"></span></div>
     <div class="row"><input id="manual" placeholder="Atau ketik alamat kasir, mis. 192.168.1.10"><button class="btn" id="manualGo">Sambungkan</button></div>
     <div class="err" id="e1"></div>
+    <div class="row" id="fwRow" style="display:none"><span id="fwState" class="grow" style="font-size:13px"></span><button class="btn sm" id="fwFix">🛡️ Izinkan di Firewall (1 klik)</button></div>
   </div>
 
   <div class="card step off" id="s2">
@@ -93,7 +94,19 @@ async function init() {
   $('#display').innerHTML = cfg.displays.map((d) => `<option value="${d.id}" ${d.id === cfg.displayId ? 'selected' : ''}>${esc(d.label)}</option>`).join('');
   if (cfg.autoStart === false) $('#autoStart').checked = false;
   scan(false);
+  if (R.firewallStatus) R.firewallStatus().then(drawFw).catch(() => {});
 }
+function drawFw(fw) {
+  if (!fw || !fw.supported) return;
+  $('#fwRow').style.display = '';
+  $('#fwState').innerHTML = fw.ok ? '<span style="color:var(--green)">✔ Firewall PC ini sudah diizinkan</span>' : '<span class="muted">Firewall PC ini belum diizinkan (perlu bila kasir tidak ditemukan)</span>';
+  $('#fwFix').style.display = fw.ok ? 'none' : '';
+}
+$('#fwFix').onclick = async () => {
+  $('#fwFix').disabled = true; $('#fwFix').textContent = '⏳ Klik "Yes" di jendela Windows…';
+  try { const r = await R.firewallFix(); drawFw(r); $('#e1').textContent = r.ok ? '' : r.message; if (r.ok) scan(false); } catch (e) { $('#e1').textContent = e.message; }
+  $('#fwFix').disabled = false; $('#fwFix').textContent = '🛡️ Izinkan di Firewall (1 klik)';
+};
 
 function step(n) { ['s1', 's2', 's3'].forEach((id, i) => $('#' + id).classList.toggle('off', i + 1 > n)); }
 

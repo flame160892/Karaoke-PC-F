@@ -57,6 +57,7 @@
   .th .pv b { font-size: 20px; font-weight: 900; letter-spacing: 1px; -webkit-background-clip: text; background-clip: text; color: transparent; }
   .th .sw { display: flex; gap: 5px; } .th .sw i { width: 22px; height: 8px; border-radius: 4px; }
   .th .nm { padding: 9px 12px; font-weight: 700; font-size: 13px; background: #0006; }
+  .fw-banner { display: flex; gap: 14px; align-items: center; padding: 14px 16px; margin-bottom: 14px; border-color: var(--yellow); }
   #pinGate { position: fixed; inset: 0; z-index: 1000; display: none; place-items: center; background: var(--bg0); }
   #pinGate.on { display: grid; }
 </style>
@@ -96,7 +97,10 @@
     <button data-act="shift">🧾 Laporan Shift</button>
   </aside>
 
-  <div class="view on" id="v-rooms"><div class="rooms" id="rooms"></div></div>
+  <div class="view on" id="v-rooms">
+    <div class="card fw-banner" id="fwBanner" style="display:none"><span style="font-size:26px">🛡️</span><div class="grow"><b>Firewall Windows belum mengizinkan Karaoke-PC-F</b><div class="muted" style="font-size:12px">PC room &amp; HP tamu tidak bisa tersambung ke komputer ini sampai diizinkan.</div></div><button class="btn pri" data-fwfix="1">🛡️ Izinkan di Firewall (1 klik)</button></div>
+    <div class="rooms" id="rooms"></div>
+  </div>
 
   <div class="view" id="v-trx">
     <div class="row" style="margin-bottom:14px"><h2 class="grow" style="margin:0">Transaksi</h2>
@@ -190,6 +194,7 @@
     <div class="card panel">
       <h3>Alamat jaringan</h3>
       <div class="muted" style="font-size:13px" id="netInfo"></div>
+      <div class="row" id="fwRow" style="margin-top:12px;display:none"><span id="fwState" class="grow" style="font-size:13px"></span><button class="btn pri sm" data-fwfix="1">🛡️ Izinkan di Firewall (1 klik)</button></div>
       <div class="row" style="margin-top:10px"><button class="btn red sm" id="resetPk">Ganti kunci player (link layar room lama tidak berlaku)</button></div>
     </div>
   </div>
@@ -589,6 +594,24 @@ $('#sSave').onclick = async () => {
   toast('Pengaturan disimpan ✔');
 };
 $('#resetPk').onclick = () => { if (confirm('Semua layar room harus dibuka ulang dengan link baru. Lanjut?')) api('/api/settings/reset-player-key', {}); };
+
+// firewall Windows (hanya di aplikasi desktop)
+let fw = null;
+function drawFw() {
+  if (!fw || !fw.supported) return;
+  $('#fwBanner').style.display = fw.ok ? 'none' : '';
+  $('#fwRow').style.display = '';
+  $('#fwState').innerHTML = fw.ok ? '<span style="color:var(--green)">✔ Firewall Windows: sudah diizinkan</span>' : '<span style="color:var(--yellow)">⚠️ Firewall Windows: belum diizinkan</span>';
+}
+async function checkFw() { if (bridge && bridge.firewallStatus) { try { fw = await bridge.firewallStatus(); drawFw(); } catch {} } }
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-fwfix]'); if (!b || !bridge) return;
+  const all = $$('[data-fwfix]'); all.forEach((x) => { x.disabled = true; x.dataset.t = x.textContent; x.textContent = '⏳ Klik "Yes" di jendela Windows…'; });
+  try { const r = await bridge.firewallFix(); fw = r; drawFw(); toast(r.message, 6000); }
+  catch (err) { toast(err.message); }
+  all.forEach((x) => { x.disabled = false; x.textContent = x.dataset.t; });
+});
+checkFw();
 
 // versi & update (hanya di aplikasi desktop)
 if (bridge && bridge.appInfo) {

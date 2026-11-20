@@ -4,6 +4,7 @@
 const { app, BrowserWindow, ipcMain, dialog, screen, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const firewall = require('./lib/firewall');
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
@@ -140,6 +141,9 @@ ipcMain.handle('pick-folder', async (e) => {
 });
 ipcMain.handle('open-player', (e, url, title) => { openPlayer(url, title); return true; });
 ipcMain.handle('get-config', () => readCfg());
+const fwOpts = () => ({ prefix: 'Karaoke-PC-F Kasir', exe: process.execPath, tcpPorts: [port || 8168], udpPorts: [8169] });
+ipcMain.handle('fw-status', () => firewall.status('Karaoke-PC-F Kasir', 3));
+ipcMain.handle('fw-fix', () => firewall.fix(fwOpts()));
 ipcMain.handle('app-info', () => ({ version: app.getVersion(), readyVersion }));
 ipcMain.handle('check-update', () => { manualUpdateCheck(); return true; });
 
