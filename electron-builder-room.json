@@ -1,0 +1,45 @@
+{
+  "appId": "id.karaoke.pcf.room",
+  "productName": "Karaoke-PC-F Room",
+  "extraMetadata": {
+    "main": "room-main.js",
+    "name": "karaoke-pc-f-room",
+    "productName": "Karaoke-PC-F Room",
+    "description": "Karaoke-PC-F Room: layar TV di dalam room"
+  },
+  "files": [
+    "room-main.js",
+    "room-preload.js",
+    "lib/discover.js",
+    "public/room-setup.html",
+    "public/style.css",
+    "package.json"
+  ],
+  "directories": {
+    "output": "dist-room",
+    "buildResources": "build"
+  },
+  "win": {
+    "target": [
+      "nsis"
+    ],
+    "icon": "build/icon-room.png",
+    "artifactName": "Karaoke-PC-F-Room-Setup-${version}.exe"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "shortcutName": "Karaoke-PC-F Room",
+    "perMachine": false
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "flame160892",
+      "repo": "Karaoke-PC-F",
+      "channel": "room",
+      "releaseType": "release"
+    }
+  ]
+}

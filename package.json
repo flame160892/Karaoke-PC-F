@@ -1,15 +1,17 @@
 {
   "name": "karaoke-pc-f",
   "productName": "Karaoke-PC-F",
-  "version": "1.1.0",
-  "description": "Sistem karaoke: layar room, request lagu dari HP, billing room, download YouTube",
+  "version": "1.2.0",
+  "description": "Karaoke-PC-F: aplikasi kasir (Desk + server lagu). Layar room: Karaoke-PC-F Room.",
   "main": "main.js",
   "author": "Karaoke-PC-F",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
     "server": "node server.js",
-    "dist": "electron-builder --win nsis --x64"
+    "dist": "electron-builder --win nsis --x64",
+    "start:room": "electron room-main.js",
+    "dist:room": "electron-builder --config electron-builder-room.json --win nsis --x64"
   },
   "devDependencies": {
     "electron": "^33.2.0",
@@ -24,6 +26,7 @@
       "server.js",
       "lib/**",
       "public/**",
+      "!public/room-setup.html",
       "package.json"
     ],
     "directories": {

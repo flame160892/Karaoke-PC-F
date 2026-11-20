@@ -18,15 +18,23 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npx electron-builder --win nsis --x64 --publish never
+      - name: Build aplikasi kasir (Karaoke-PC-F)
+        run: npx electron-builder --win nsis --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build aplikasi room (Karaoke-PC-F Room)
+        run: npx electron-builder --config electron-builder-room.json --win nsis --x64 --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cek file update tersedia
+        shell: bash
+        run: ls -la dist dist-room && test -f dist/latest.yml && test -f dist-room/room.yml
       - uses: actions/upload-artifact@v4
         with:
           name: Karaoke-PC-F-Setup
           path: |
             dist/*.exe
-            dist/latest.yml
+            dist-room/*.exe
       - name: Baca versi
         id: ver
         shell: bash
@@ -42,7 +50,12 @@ jobs:
             dist/*.exe
             dist/*.exe.blockmap
             dist/latest.yml
+            dist-room/*.exe
+            dist-room/*.exe.blockmap
+            dist-room/room.yml
           body: |
-            Installer Windows Karaoke-PC-F. Download file .exe di bawah, jalankan, lalu pilih mode:
-            - Komputer Kasir / Server (Desk)
-            - Layar Room
+            Dua aplikasi Windows:
+            - **Karaoke-PC-F-Setup** → install di komputer KASIR (Desk + penyimpanan lagu)
+            - **Karaoke-PC-F-Room-Setup** → install di PC/TV setiap ROOM (otomatis menemukan kasir, masukkan PIN, pilih room)
+
+            Keduanya update otomatis.

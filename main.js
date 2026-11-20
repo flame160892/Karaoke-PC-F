@@ -1,5 +1,5 @@
 // Karaoke-PC-F — aplikasi desktop (Electron).
-// Mode "Desk": komputer kasir sekaligus server lagu.  Mode "Layar Room": komputer di dalam room.
+// Aplikasi KASIR (Desk + server lagu). Layar TV room memakai aplikasi terpisah: Karaoke-PC-F Room (room-main.js).
 'use strict';
 const { app, BrowserWindow, ipcMain, dialog, screen, Menu, shell } = require('electron');
 const path = require('path');
@@ -121,17 +121,11 @@ async function runDesk() {
 
 function runRoom(url) { const w = openPlayer(url, 'Room', { secondScreen: false }); w.on('closed', () => { if (!playerWins.size && !mainWin) app.quit(); }); }
 
-function runLauncher() {
-  const w = new BrowserWindow({ width: 760, height: 620, resizable: false, backgroundColor: '#0b0618', title: 'Karaoke-PC-F', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js') } });
-  w.loadFile(path.join(__dirname, 'public', 'launch.html'));
-  return w;
-}
 
 function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'Aplikasi', submenu: [
       { label: 'Cek update…', click: () => manualUpdateCheck() },
-      { label: 'Ganti mode (Desk / Layar Room)…', click: () => { const c = readCfg(); delete c.mode; writeCfg(c); app.relaunch(); app.exit(0); } },
       { label: 'Buka folder data', click: () => shell.openPath(path.join(app.getPath('userData'), 'data')) },
       { type: 'separator' }, { role: 'reload', label: 'Muat ulang' }, { role: 'toggleDevTools', label: 'Developer tools' },
       { type: 'separator' }, { role: 'quit', label: 'Keluar' },
@@ -145,17 +139,6 @@ ipcMain.handle('pick-folder', async (e) => {
   return r.canceled ? null : r.filePaths[0];
 });
 ipcMain.handle('open-player', (e, url, title) => { openPlayer(url, title); return true; });
-ipcMain.handle('launch', async (e, mode, url, remember) => {
-  const c = readCfg();
-  if (remember) { c.mode = mode; if (url) c.roomUrl = url; } else { delete c.mode; if (url) c.roomUrl = url; }
-  writeCfg(c);
-  const launcher = BrowserWindow.fromWebContents(e.sender);
-  appMode = mode;
-  if (mode === 'desk') await runDesk(); else runRoom(url);
-  setupUpdates();
-  launcher.close();
-  return true;
-});
 ipcMain.handle('get-config', () => readCfg());
 ipcMain.handle('app-info', () => ({ version: app.getVersion(), readyVersion }));
 ipcMain.handle('check-update', () => { manualUpdateCheck(); return true; });
@@ -164,9 +147,9 @@ app.on('second-instance', () => { const w = mainWin || [...playerWins][0]; if (w
 app.whenReady().then(async () => {
   buildMenu();
   const c = readCfg();
-  if (c.mode === 'desk') { appMode = 'desk'; await runDesk(); setupUpdates(); }
-  else if (c.mode === 'room' && c.roomUrl) { appMode = 'room'; runRoom(c.roomUrl); setupUpdates(); }
-  else runLauncher();
+  if (c.mode === 'room' && c.roomUrl) { appMode = 'room'; runRoom(c.roomUrl); } // pemasangan lama (v1.0/1.1) yang dipakai sebagai layar room
+  else { appMode = 'desk'; await runDesk(); }
+  setupUpdates();
 });
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', () => { try { server && server.flush(); } catch {} });

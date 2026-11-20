@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Karaoke-PC-F Room</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: grid; place-items: center; padding: 30px; overflow: auto; }
+  .box { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 18px; }
+  .step { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .step h2 { margin: 0; font-size: 20px; display: flex; gap: 10px; align-items: center; }
+  .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--flame); font-size: 15px; font-weight: 900; flex: none; }
+  .step.off { opacity: .35; pointer-events: none; }
+  .desk { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel2); text-align: left; width: 100%; }
+  .desk.on, .rm.on { border-color: var(--pink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pink) 25%, transparent); }
+  .desk b { font-size: 16px; } .desk span { color: var(--muted); font-size: 13px; }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .rm { padding: 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel2); text-align: left; }
+  .rm b { font-size: 20px; display: block; } .rm span { font-size: 12px; color: var(--muted); }
+  .big { font-size: 18px !important; padding: 16px 24px !important; }
+  .hint { font-size: 12px; color: var(--dim); text-align: center; }
+  #offline { display: none; text-align: center; gap: 16px; flex-direction: column; align-items: center; }
+  #offline h1 { font-size: 42px; margin: 0; }
+  .bigspin { width: 64px; height: 64px; border-width: 6px; }
+  .err { color: var(--red); font-size: 13px; min-height: 18px; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="box" id="offline">
+  <div class="brand"><b style="font-size:44px">Karaoke-PC-F</b><small style="font-size:12px">ROOM</small></div>
+  <span class="spin bigspin"></span>
+  <h1 id="offTitle">Menyambung ke kasir…</h1>
+  <div class="muted" style="font-size:18px" id="offInfo"></div>
+  <div class="row"><button class="btn pri big" id="offRetry">Coba sekarang</button><button class="btn big" id="offSetup">Ganti pengaturan</button></div>
+  <div class="hint">Pastikan komputer kasir menyala, aplikasi Karaoke-PC-F terbuka, dan PC ini tersambung ke jaringan yang sama.</div>
+</div>
+
+<div class="box" id="setup">
+  <div class="row"><div class="brand grow"><b style="font-size:38px">Karaoke-PC-F</b><small style="font-size:11px">ROOM · PENGATURAN LAYAR TV</small></div><span class="muted" id="ver"></span></div>
+  <div class="card" id="reasonBox" style="display:none;padding:12px 16px;border-color:var(--yellow)"></div>
+
+  <div class="card step" id="s1">
+    <h2><span class="num">1</span> Pilih komputer kasir</h2>
+    <div id="desks" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="row"><button class="btn" id="rescan">🔄 Cari lagi</button><span class="muted" id="scanMsg" style="font-size:13px"></span></div>
+    <div class="row"><input id="manual" placeholder="Atau ketik alamat kasir, mis. 192.168.1.10"><button class="btn" id="manualGo">Sambungkan</button></div>
+    <div class="err" id="e1"></div>
+  </div>
+
+  <div class="card step off" id="s2">
+    <h2><span class="num">2</span> Masukkan PIN admin</h2>
+    <div class="muted" style="font-size:13px">PIN ada di Desk kasir → Pengaturan (bawaan: 1234).</div>
+    <div class="row"><input id="pin" type="password" inputmode="numeric" placeholder="PIN" style="max-width:220px;font-size:20px"><button class="btn pri" id="pinGo">Lanjut</button></div>
+    <div class="err" id="e2"></div>
+  </div>
+
+  <div class="card step off" id="s3">
+    <h2><span class="num">3</span> PC ini untuk room mana?</h2>
+    <div class="rooms" id="rooms"></div>
+    <div class="grid2">
+      <div class="field"><label>Tampilkan di layar</label><select id="display"></select></div>
+      <div class="field"><label>&nbsp;</label><label class="row"><input type="checkbox" id="autoStart" checked style="width:auto"> Jalan otomatis saat PC dinyalakan</label></div>
+    </div>
+    <button class="btn pri big" id="start" disabled>▶ Mulai layar room</button>
+    <div class="err" id="e3"></div>
+  </div>
+
+  <div class="hint">Di layar room: <b>Ctrl+Shift+S</b> = buka pengaturan ini · <b>F11</b> = layar penuh · <b>Ctrl+Shift+Q</b> = keluar</div>
+  <div style="text-align:center"><button class="btn ghost sm" id="quit">Keluar aplikasi</button></div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const R = window.roomApp;
+const q = new URLSearchParams(location.search);
+let desk = null, pairInfo = null, roomSel = null, cfg = {};
+
+if (q.get('offline')) {
+  $('#setup').style.display = 'none'; $('#offline').style.display = 'flex';
+  $('#offInfo').textContent = [q.get('venue'), q.get('room') && 'Room ' + q.get('room')].filter(Boolean).join(' · ');
+  R.onOfflineTick((n) => { $('#offTitle').textContent = `Menyambung ke kasir… (percobaan ${n})`; });
+  $('#offRetry').onclick = () => R.retry();
+  $('#offSetup').onclick = () => R.setup();
+} else init();
+
+async function init() {
+  cfg = await R.config();
+  $('#ver').textContent = 'v' + cfg.version;
+  if (q.get('reason')) { $('#reasonBox').style.display = ''; $('#reasonBox').textContent = '⚠️ ' + q.get('reason'); }
+  $('#display').innerHTML = cfg.displays.map((d) => `<option value="${d.id}" ${d.id === cfg.displayId ? 'selected' : ''}>${esc(d.label)}</option>`).join('');
+  if (cfg.autoStart === false) $('#autoStart').checked = false;
+  scan(false);
+}
+
+function step(n) { ['s1', 's2', 's3'].forEach((id, i) => $('#' + id).classList.toggle('off', i + 1 > n)); }
+
+async function scan(deep) {
+  $('#scanMsg').innerHTML = '<span class="spin"></span> ' + (deep ? 'Memeriksa semua alamat di jaringan (± 10 detik)…' : 'Mencari kasir di jaringan…');
+  $('#rescan').disabled = true;
+  let list = [];
+  try { list = await R.discover(deep); } catch {}
+  $('#rescan').disabled = false;
+  if (!list.length && !deep) return scan(true);
+  $('#scanMsg').textContent = list.length ? `${list.length} komputer kasir ditemukan` : 'Belum ketemu. Pastikan kasir menyala & satu jaringan, lalu Cari lagi — atau ketik alamatnya.';
+  $('#desks').innerHTML = list.map((d) => `<button class="desk" data-url="${esc(d.url)}" data-venue="${esc(d.venue)}"><span style="font-size:28px">🖥️</span><div class="grow"><b>${esc(d.venue)}</b><br><span>${esc(d.url.replace('http://', ''))}</span></div></button>`).join('');
+  const prev = list.find((d) => d.url === cfg.server) || (list.length === 1 ? list[0] : null);
+  if (prev) pickDesk(prev.url, prev.venue);
+}
+$('#rescan').onclick = () => scan(true);
+$('#desks').onclick = (e) => { const b = e.target.closest('.desk'); if (b) pickDesk(b.dataset.url, b.dataset.venue); };
+$('#manualGo').onclick = async () => {
+  $('#e1').textContent = '';
+  const r = await R.check($('#manual').value);
+  if (!r) { $('#e1').textContent = 'Kasir tidak ditemukan di alamat itu. Periksa IP dan pastikan aplikasi Karaoke-PC-F di kasir terbuka.'; return; }
+  pickDesk(r.url, r.venue);
+};
+$('#manual').onkeydown = (e) => { if (e.key === 'Enter') $('#manualGo').click(); };
+
+function pickDesk(url, venue) {
+  desk = { url, venue };
+  document.querySelectorAll('.desk').forEach((b) => b.classList.toggle('on', b.dataset.url === url));
+  step(2); $('#pin').focus();
+}
+$('#pinGo').onclick = async () => {
+  $('#e2').textContent = '';
+  try { pairInfo = await R.pair(desk.url, $('#pin').value); }
+  catch (e) { $('#e2').textContent = e.message; return; }
+  $('#rooms').innerHTML = pairInfo.rooms.map((r) => `<button class="rm" data-id="${esc(r.id)}" data-name="${esc(r.name)}"><b>${esc(r.name)}</b><span>${esc(r.type)}${r.seats ? ' · ' + r.seats + ' kursi' : ''}</span></button>`).join('') || '<div class="muted">Belum ada room. Tambahkan room di Desk kasir dulu.</div>';
+  step(3);
+  const prev = pairInfo.rooms.find((r) => r.id === cfg.roomId);
+  if (prev) pickRoom(prev.id, prev.name);
+};
+$('#pin').onkeydown = (e) => { if (e.key === 'Enter') $('#pinGo').click(); };
+$('#rooms').onclick = (e) => { const b = e.target.closest('.rm'); if (b) pickRoom(b.dataset.id, b.dataset.name); };
+function pickRoom(id, name) {
+  roomSel = { id, name };
+  document.querySelectorAll('.rm').forEach((b) => b.classList.toggle('on', b.dataset.id === id));
+  $('#start').disabled = false; $('#start').textContent = `▶ Mulai layar Room ${name}`;
+}
+$('#start').onclick = () => R.save({
+  server: desk.url, venue: pairInfo.venue, playerKey: pairInfo.playerKey, roomId: roomSel.id, roomName: roomSel.name,
+  displayId: Number($('#display').value) || null, autoStart: $('#autoStart').checked,
+});
+$('#quit').onclick = () => R.quit();
+</script>
+</body>
+</html>

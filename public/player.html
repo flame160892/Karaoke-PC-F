@@ -495,7 +495,10 @@ loadDisplay();
 let lastV = -1;
 const refresh = debounce(async () => {
   try { state = await papi(''); render(); }
-  catch (e) { toast(e.message, 6000); }
+  catch (e) {
+    if (e.status === 403 && window.roomApp) return window.roomApp.setup('Kunci layar room sudah diganti di Desk kasir. Masukkan PIN dan pilih room lagi.');
+    toast(e.message, 6000);
+  }
 }, 120);
 listen((m) => {
   if (m.v !== lastV) { lastV = m.v; refresh(); }

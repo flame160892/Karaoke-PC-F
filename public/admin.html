@@ -408,9 +408,12 @@ document.addEventListener('input', (e) => { if (e.target.id === 'mFind') { const
 function openPlayer(r) {
   const url = `${S.baseUrl}/player/${r.id}?pk=${S.settings.playerKey}`;
   const local = `${location.origin}/player/${r.id}?pk=${S.settings.playerKey}`;
-  modal('Layar room ' + r.name, `<div class="muted" style="font-size:13px">Buka link ini di komputer/TV room (browser Chrome/Edge layar penuh, atau aplikasi Karaoke-PC-F mode Layar Room):</div>
+  const ip = (S.baseUrl || '').replace(/^https?:\/\//, '');
+  modal('Layar room ' + r.name, `<div class="card" style="padding:14px;background:var(--panel2)"><b>📺 Cara paling mudah: aplikasi Karaoke-PC-F Room</b>
+      <ol style="margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.7"><li>Install <b>Karaoke-PC-F-Room-Setup.exe</b> di PC room</li><li>Aplikasi menemukan kasir ini otomatis (alamat: <code>${esc(ip)}</code>)</li><li>Masukkan PIN admin, pilih <b>Room ${esc(r.name)}</b> → selesai</li></ol></div>
+    <div class="muted" style="font-size:13px">Atau tanpa install: buka link ini di Chrome/Edge di PC room lalu tekan F11.</div>
     <input readonly value="${esc(url)}" onclick="this.select()">
-    <div style="text-align:center"><img src="/api/qr?text=${encodeURIComponent(url)}" style="width:170px;border-radius:8px"></div>`,
+    <div style="text-align:center"><img src="/api/qr?text=${encodeURIComponent(url)}" style="width:150px;border-radius:8px"></div>`,
     [{ t: 'Salin link', fn: () => { navigator.clipboard && navigator.clipboard.writeText(url); toast('Link disalin'); return false; } },
      { t: bridge ? 'Buka di layar kedua komputer ini' : 'Buka di tab baru', c: 'pri', fn: () => { bridge ? bridge.openPlayer(local, r.name) : window.open(local, '_blank'); } }]);
 }

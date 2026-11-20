@@ -8,6 +8,8 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const qr = require('./lib/qr');
+const dgram = require('dgram');
+const DISCOVERY_PORT = 8169; // UDP: aplikasi Room mencari komputer kasir
 const { createYtdl } = require('./lib/ytdl');
 
 const VIDEO_EXT = ['.mp4', '.webm', '.mkv', '.m4v', '.mov', '.ogv'];
@@ -475,6 +477,18 @@ function createServer(opts = {}) {
     }
 
     // ---- publik ----
+    if (M === 'GET' && p === '/api/hello') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return ok(res, { app: 'karaoke-pc-f', venue: db.settings.venueName, port: db.settings.port, rooms: db.rooms.length });
+    }
+    if (M === 'POST' && p === '/api/pair') {
+      // dipakai aplikasi Karaoke-PC-F Room: PIN admin → daftar room + kunci player
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      const body = await readBody(req);
+      const good = isLocal(req) || String(body.pin || '') === String(db.settings.adminPin);
+      if (!good) { await new Promise((r) => setTimeout(r, 800)); return err(res, 401, 'PIN salah'); }
+      return ok(res, { venue: db.settings.venueName, playerKey: db.settings.playerKey, rooms: db.rooms.map((r) => ({ id: r.id, name: r.name, type: r.type || '', seats: r.seats || 0 })) });
+    }
     if (M === 'GET' && p === '/api/songs') {
       return ok(res, search(url.searchParams.get('q') || '', Math.min(300, Number(url.searchParams.get('limit')) || 60), url.searchParams.get('sort')));
     }
@@ -616,13 +630,30 @@ function createServer(opts = {}) {
     handle(req, res).catch((e) => { console.error(e); try { err(res, 500, 'Kesalahan server: ' + e.message); } catch {} });
   });
 
+  let udp = null;
+  function startDiscovery() {
+    if (udp || opts.discovery === false) return;
+    try {
+      udp = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+      udp.on('message', (msg, rinfo) => {
+        if (String(msg).trim() !== 'KARAOKE-PC-F?') return;
+        const reply = Buffer.from(JSON.stringify({ app: 'karaoke-pc-f', venue: db.settings.venueName, port: db.settings.port }));
+        udp.send(reply, rinfo.port, rinfo.address);
+      });
+      udp.on('error', () => { try { udp.close(); } catch {} udp = null; });
+      udp.bind(Number(opts.discoveryPort) || DISCOVERY_PORT);
+    } catch { udp = null; }
+  }
+
   return {
     server, db, scan,
+    close() { try { udp && udp.close(); } catch {} server.close(); },
     listen(port = db.settings.port) {
       return new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(port, '0.0.0.0', () => {
           db.settings.port = server.address().port;
+          startDiscovery();
           resolve(server.address().port);
         });
       });
