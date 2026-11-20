@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install
       - run: npx electron-builder --win nsis --x64 --publish never
         env:
@@ -25,8 +25,19 @@ jobs:
         with:
           name: Karaoke-PC-F-Setup
           path: dist/*.exe
-      - name: Rilis (jika push tag v*)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Baca versi
+        id: ver
+        shell: bash
+        run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Terbitkan Release (link download langsung)
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: Karaoke-PC-F v${{ steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
           files: dist/*.exe
+          body: |
+            Installer Windows Karaoke-PC-F. Download file .exe di bawah, jalankan, lalu pilih mode:
+            - Komputer Kasir / Server (Desk)
+            - Layar Room

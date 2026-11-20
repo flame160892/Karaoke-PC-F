@@ -22,7 +22,7 @@ Sistem karaoke untuk Windows: **Desk kasir** (banyak room), **layar TV room**, d
 Pintasan di layar room: Spasi = pause · N = skip · R = ulang · F = layar penuh · L = lirik · C = vocal cut · F11 = layar penuh jendela.
 
 ## Build installer (.exe)
-Push ke GitHub → tab **Actions** → *Build Windows installer* → unduh artifact `Karaoke-PC-F-Setup`.
+Setiap push ke `main`, GitHub Actions membuat installer dan menerbitkannya di halaman **Releases** (naikkan `version` di package.json untuk rilis baru).
 Atau di PC Windows: `npm install` lalu `npm run dist` (hasil di folder `dist`).
 
 Jalankan tanpa Electron (tes): `node server.js` lalu buka `http://localhost:8168`.
