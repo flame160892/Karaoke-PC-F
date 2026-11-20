@@ -1,7 +1,7 @@
 {
   "name": "karaoke-pc-f",
   "productName": "Karaoke-PC-F",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sistem karaoke: layar room, request lagu dari HP, billing room, download YouTube",
   "main": "main.js",
   "author": "Karaoke-PC-F",

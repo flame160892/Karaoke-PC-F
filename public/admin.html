@@ -207,7 +207,7 @@
 
 <script src="/static/common.js"></script>
 <script>
-const flame = window.flame || null; // jembatan Electron (jika ada)
+const bridge = window.flame || null; // jembatan Electron (jika ada)
 let S = null, sel = store.get('deskSel', null), view = 'rooms', lastAlert = '';
 const cur = () => (S ? S.settings.currency : 'Rp');
 const R = (id) => S.rooms.find((r) => r.id === id);
@@ -411,7 +411,7 @@ function openPlayer(r) {
     <input readonly value="${esc(url)}" onclick="this.select()">
     <div style="text-align:center"><img src="/api/qr?text=${encodeURIComponent(url)}" style="width:170px;border-radius:8px"></div>`,
     [{ t: 'Salin link', fn: () => { navigator.clipboard && navigator.clipboard.writeText(url); toast('Link disalin'); return false; } },
-     { t: flame ? 'Buka di layar kedua komputer ini' : 'Buka di tab baru', c: 'pri', fn: () => { flame ? flame.openPlayer(local, r.name) : window.open(local, '_blank'); } }]);
+     { t: bridge ? 'Buka di layar kedua komputer ini' : 'Buka di tab baru', c: 'pri', fn: () => { bridge ? bridge.openPlayer(local, r.name) : window.open(local, '_blank'); } }]);
 }
 
 function printReceipt(t) {
@@ -488,7 +488,7 @@ function renderSongs() {
 }
 const saveDirs = (dirs) => api('/api/settings', { songDirs: dirs });
 $('#addDir').onclick = async () => { const d = $('#newDir').value.trim(); if (!d) return; await saveDirs([...S.settings.songDirs, d]); $('#newDir').value = ''; toast('Folder ditambahkan, memindai lagu…'); };
-$('#pickDir').onclick = async () => { if (flame) { const d = await flame.pickFolder(); if (d) $('#newDir').value = d; } else toast('Ketik alamat folder secara manual (mis. E:\\KARAOKE)'); };
+$('#pickDir').onclick = async () => { if (bridge) { const d = await bridge.pickFolder(); if (d) $('#newDir').value = d; } else toast('Ketik alamat folder secara manual (mis. E:\\KARAOKE)'); };
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-rmdir]'); if (b && confirm('Lepas folder ini dari perpustakaan? (file tidak dihapus)')) saveDirs(S.settings.songDirs.filter((d) => d !== b.dataset.rmdir)); });
 $('#rescan').onclick = () => api('/api/rescan', {}).then(() => toast('Memindai ulang…'));
 $('#sq').oninput = debounce(async () => {
